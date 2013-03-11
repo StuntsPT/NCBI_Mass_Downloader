@@ -6,7 +6,7 @@ from sys import argv
 
 Entrez.email = "f.pinamartins@gmail.com"
 
-handle = Entrez.esearch(db=argv[2],term=argv[1],usehistory="y",retmax=1000000)
+handle = Entrez.esearch(db=argv[2],term=argv[1],usehistory="y",retmax=10000000)
 record = Entrez.read(handle)
 handle.close()
 
@@ -15,17 +15,14 @@ IDs = record["IdList"]
 webenv = record["WebEnv"]
 query_key = record["QueryKey"]
 
-print(count)
-print(len(IDs))
-
 assert count == len(IDs)
 
 batch_size = 1000
 
 outfile = open(argv[3],'w')
 for start in range(0,count,batch_size):
-    end = min(count,batch_size)
-    print("Going to download record %i to %i") % (start+1, end)
+    end = start + 1 + batch_size
+    print("Going to download record %i to %i of %i") % (start+1, end, count)
     fetch_handle = Entrez.efetch(db=argv[2], rettype="fasta", restart=start, retmax=batch_size, webenv=webenv, query_key=query_key)
     data = fetch_handle.read()
     fetch_handle.close()
