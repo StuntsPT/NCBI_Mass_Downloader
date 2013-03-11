@@ -21,7 +21,7 @@ batch_size = 1000
 
 outfile = open(argv[3],'w')
 for start in range(0,count,batch_size):
-    end = start + 1 + batch_size
+    end = start + batch_size
     print("Going to download record %i to %i of %i") % (start+1, end, count)
     fetch_handle = Entrez.efetch(db=argv[2], rettype="fasta", restart=start, retmax=batch_size, webenv=webenv, query_key=query_key)
     data = fetch_handle.read()
