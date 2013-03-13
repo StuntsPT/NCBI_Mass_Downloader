@@ -4,9 +4,15 @@
 from Bio import Entrez
 from sys import argv
 
-Entrez.email = "f.pinamartins@gmail.com"
+#Set global vars:
+user_email = "f.pinamartins@gmail.com"
+database = argv[2]
+search_term = argv[1]
+output_file = argv[3]
 
-handle = Entrez.esearch(db=argv[2],term=argv[1],usehistory="y",retmax=10000000)
+Entrez.email = user_email
+
+handle = Entrez.esearch(db=database,term=search_term,usehistory="y",retmax=10000000)
 record = Entrez.read(handle)
 handle.close()
 
@@ -19,11 +25,11 @@ assert count == len(IDs)
 
 batch_size = 1000
 
-outfile = open(argv[3],'w')
+outfile = open(output_file,'w')
 for start in range(0,count,batch_size):
     end = start + batch_size
     print("Going to download record %i to %i of %i") % (start+1, end, count)
-    fetch_handle = Entrez.efetch(db=argv[2], rettype="fasta", retstart=start, retmax=batch_size, webenv=webenv, query_key=query_key)
+    fetch_handle = Entrez.efetch(db=database, rettype="fasta", retstart=start, retmax=batch_size, webenv=webenv, query_key=query_key)
     data = fetch_handle.read()
     fetch_handle.close()
     outfile.write(data)
