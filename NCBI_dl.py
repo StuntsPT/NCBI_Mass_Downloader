@@ -3,6 +3,9 @@
 #Usage: NCBI_dl.py "Query term" "database" outfile.fasta
 from Bio import Entrez
 from sys import argv
+from shutil import move
+from os import remove
+import re
 
 #Set global vars:
 user_email = "f.pinamartins@gmail.com"
@@ -46,6 +49,46 @@ def NCBI_fetch(output_file, count, IDs, webenv, query_key, Bsize):
         outfile.write(data)
 
     outfile.close()
+
+    #Check for missing sequences:
+    print("Checking for sequences that did not download... Please wait.")
+    ver_IDs = Error_finder(output_file)
+    print(ver_IDs)
+    missing_IDs = set()
+    for i in IDs:
+        if i not in ver_IDs:
+            missing_IDs.add(i)
+    if len(missing_IDs) == 0:
+        print("All sequences were downloaded correctly. Good!")
+    else:
+        print("%s sequences did not download correctly. Retrying...") %(len(missing_IDs))
+
+
+def Error_finder(output_file):
+    #Looks for errors in the output fasta and retruns a list of necessary retries
+    temp_file = output_file + ".tmp"
+    move(output_file, temp_file)
+    original_file = open(temp_file,'r')
+    new_file = open(output_file,'w')
+    verified_IDs = set()
+
+    for lines in original_file:
+        if lines.startswith(">"):
+            ID = re.search("gi|.*?|",lines).group(0)[3:-1]
+            verified_IDs.add(ID)
+            new_file.write("\n" + lines) #TODO: remove first empty line from file
+        elif lines.startswith("<") or lines.startswith("\n"):
+            pass
+        else:
+            new_file.write(lines)
+
+    original_file.close()
+    new_file.close()
+
+
+    return verified_IDs
+
+
 
 #Run everything
 rec = NCBI_search(user_email, database, search_term)
