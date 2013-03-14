@@ -53,7 +53,6 @@ def NCBI_fetch(output_file, count, IDs, webenv, query_key, Bsize):
     #Check for missing sequences:
     print("Checking for sequences that did not download... Please wait.")
     ver_IDs = Error_finder(output_file)
-    print(ver_IDs)
     missing_IDs = set()
     for i in IDs:
         if i not in ver_IDs:
@@ -74,7 +73,7 @@ def Error_finder(output_file):
 
     for lines in original_file:
         if lines.startswith(">"):
-            ID = re.search("gi|.*?|",lines).group(0)[3:-1]
+            ID = re.search("gi\|.*?\|",lines).group(0)[3:-1]
             verified_IDs.add(ID)
             new_file.write("\n" + lines) #TODO: remove first empty line from file
         elif lines.startswith("<") or lines.startswith("\n"):
@@ -84,7 +83,6 @@ def Error_finder(output_file):
 
     original_file.close()
     new_file.close()
-
 
     return verified_IDs
 
