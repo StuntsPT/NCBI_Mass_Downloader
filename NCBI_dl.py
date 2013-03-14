@@ -24,6 +24,16 @@ def NCBI_search(Uemail, DB, ST):
 
     return record
 
+def NCBI_post(Uemail, DB, IDs):
+    #Submit search to NCBI and return the records
+    Entrez.email = Uemail
+    IDs_string = ",".join(IDs)
+    handle = Entrez.epost(DB,IDs_string,retmax=10000000)
+    record = Entrez.read(handle)
+    handle.close()
+    #FIXME - not done yet!!
+    return record
+
 def Record_processor(record):
     #Processes the record into sparate usefull information
     count = int(record["Count"])
@@ -35,8 +45,8 @@ def Record_processor(record):
 
     return count, IDs, webenv, query_key
 
-def NCBI_fetch(output_file, count, IDs, webenv, query_key, Bsize):
-    #Fetches results from NCBI
+def NCBI_history_fetch(output_file, count, IDs, webenv, query_key, Bsize):
+    #Fetches results from NCBI using history
     outfile = open(output_file,'w')
     if Bsize > count:
         Bsize = count
@@ -49,7 +59,21 @@ def NCBI_fetch(output_file, count, IDs, webenv, query_key, Bsize):
         outfile.write(data)
 
     outfile.close()
+    ReDownloader(output_file, IDs)
 
+#~ def NCBI_IDs_fetch(output_file, count, IDs, Bsize):
+    #~ #Fetches results from NCBI using a list of IDs
+    #~ outfile = open(output_file,'a')
+    #~ IDs_string = ",".join(IDs)
+    #~ fetch_handle = Entrez.efetch(db=database, rettype="fasta", retmax=len(IDs))
+    #~ data = fetch_handle.read()
+    #~ fetch_handle.close()
+    #~ outfile.write(data)
+
+    outfile.close()
+    ReDownloader(output_file, IDs)
+
+def ReDownloader(output_file, IDs):
     #Check for missing sequences:
     print("Checking for sequences that did not download... Please wait.")
     ver_IDs = Error_finder(output_file)
@@ -57,11 +81,12 @@ def NCBI_fetch(output_file, count, IDs, webenv, query_key, Bsize):
     for i in IDs:
         if i not in ver_IDs:
             missing_IDs.add(i)
+    IDs = missing_IDs #Improve performance on subsequent runs
     if len(missing_IDs) == 0:
         print("All sequences were downloaded correctly. Good!")
+        quit("Program finished without error.")
     else:
         print("%s sequences did not download correctly. Retrying...") %(len(missing_IDs))
-
 
 def Error_finder(output_file):
     #Looks for errors in the output fasta and retruns a list of necessary retries
@@ -91,4 +116,4 @@ def Error_finder(output_file):
 #Run everything
 rec = NCBI_search(user_email, database, search_term)
 count, IDs, webenv, query_key = Record_processor(rec)
-NCBI_fetch(output_file, count, IDs, webenv, query_key, batch_size)
+NCBI_history_fetch(output_file, count, IDs, webenv, query_key, batch_size)
