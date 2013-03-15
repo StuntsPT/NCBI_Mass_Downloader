@@ -31,7 +31,11 @@ def NCBI_post(IDs):
     record = Entrez.read(handle)
     handle.close()
 
-    return record
+    count = len(IDs)
+    webenv = record["WebEnv"]
+    query_key = record["QueryKey"]
+
+    return count, IDs, webenv, query_key
 
 def Record_processor(record):
     #Processes the record into sparate usefull information
@@ -52,6 +56,7 @@ def NCBI_history_fetch(output_file, count, IDs, webenv, query_key, Bsize):
     for start in range(0,count,Bsize):
         end = start + Bsize
         print("Downloading record %i to %i of %i") % (start+1, end, count)
+        #TODO: Make it a try to enable retries on server errors
         fetch_handle = Entrez.efetch(db=database, rettype="fasta", retstart=start, retmax=Bsize, webenv=webenv, query_key=query_key)
         data = fetch_handle.read()
         fetch_handle.close()
@@ -74,8 +79,7 @@ def ReDownloader(output_file, IDs):
         quit("Program finished without error.")
     else:
         print("%s sequences did not download correctly. Retrying...") %(len(missing_IDs))
-        new_rec = NCBI_post(IDs)
-        count, IDs, webenv, query_key = Record_processor(new_rec)
+        count, IDs, webenv, query_key = NCBI_post(IDs)
         NCBI_history_fetch(output_file, count, IDs, webenv, query_key, 1000)
 
 
