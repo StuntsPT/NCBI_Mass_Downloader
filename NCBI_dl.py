@@ -14,24 +14,23 @@ search_term = argv[1]
 output_file = argv[3]
 batch_size = 1000
 
+Entrez.email = user_email
 
-def NCBI_search(Uemail, DB, ST):
+def NCBI_search(ST):
     #Submit search to NCBI and return the records
-    Entrez.email = Uemail
-    handle = Entrez.esearch(db=DB,term=ST,usehistory="y",retmax=10000000)
+    handle = Entrez.esearch(db=database,term=ST,usehistory="y",retmax=10000000)
     record = Entrez.read(handle)
     handle.close()
 
     return record
 
-def NCBI_post(Uemail, DB, IDs):
-    #Submit search to NCBI and return the records
-    Entrez.email = Uemail
+def NCBI_post(IDs):
+    #Submit id_list to NCBI via epost and return the records
     IDs_string = ",".join(IDs)
-    handle = Entrez.epost(DB,IDs_string,retmax=10000000)
+    handle = Entrez.epost(database,IDs_string,retmax=10000000)
     record = Entrez.read(handle)
     handle.close()
-    #FIXME - not done yet!!
+
     return record
 
 def Record_processor(record):
@@ -47,7 +46,7 @@ def Record_processor(record):
 
 def NCBI_history_fetch(output_file, count, IDs, webenv, query_key, Bsize):
     #Fetches results from NCBI using history
-    outfile = open(output_file,'w')
+    outfile = open(output_file,'a')
     if Bsize > count:
         Bsize = count
     for start in range(0,count,Bsize):
@@ -57,18 +56,6 @@ def NCBI_history_fetch(output_file, count, IDs, webenv, query_key, Bsize):
         data = fetch_handle.read()
         fetch_handle.close()
         outfile.write(data)
-
-    outfile.close()
-    ReDownloader(output_file, IDs)
-
-#~ def NCBI_IDs_fetch(output_file, count, IDs, Bsize):
-    #~ #Fetches results from NCBI using a list of IDs
-    #~ outfile = open(output_file,'a')
-    #~ IDs_string = ",".join(IDs)
-    #~ fetch_handle = Entrez.efetch(db=database, rettype="fasta", retmax=len(IDs))
-    #~ data = fetch_handle.read()
-    #~ fetch_handle.close()
-    #~ outfile.write(data)
 
     outfile.close()
     ReDownloader(output_file, IDs)
@@ -87,6 +74,10 @@ def ReDownloader(output_file, IDs):
         quit("Program finished without error.")
     else:
         print("%s sequences did not download correctly. Retrying...") %(len(missing_IDs))
+        new_rec = NCBI_post(IDs)
+        count, IDs, webenv, query_key = Record_processor(new_rec)
+        NCBI_history_fetch(output_file, count, IDs, webenv, query_key, 1000)
+
 
 def Error_finder(output_file):
     #Looks for errors in the output fasta and retruns a list of necessary retries
@@ -114,6 +105,6 @@ def Error_finder(output_file):
 
 
 #Run everything
-rec = NCBI_search(user_email, database, search_term)
+rec = NCBI_search(search_term)
 count, IDs, webenv, query_key = Record_processor(rec)
 NCBI_history_fetch(output_file, count, IDs, webenv, query_key, batch_size)
