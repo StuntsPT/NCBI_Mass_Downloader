@@ -27,7 +27,7 @@ def NCBI_search(ST):
 def NCBI_post(IDs):
     #Submit id_list to NCBI via epost and return the records
     IDs_string = ",".join(IDs)
-    handle = Entrez.epost(database,IDs_string,retmax=10000000)
+    handle = Entrez.epost(database,id=IDs_string,retmax=10000000)
     record = Entrez.read(handle)
     handle.close()
 
