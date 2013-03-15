@@ -54,9 +54,12 @@ def NCBI_history_fetch(output_file, count, IDs, webenv, query_key, Bsize):
     if Bsize > count:
         Bsize = count
     for start in range(0,count,Bsize):
-        end = start + Bsize
+        if start + Bsize < count:
+            end = start + Bsize
+        else:
+            end = count
         print("Downloading record %i to %i of %i") % (start+1, end, count)
-        #TODO: Make it a try to enable retries on server errors
+        #TODO: Make it a "try" to enable retries on server errors
         fetch_handle = Entrez.efetch(db=database, rettype="fasta", retstart=start, retmax=Bsize, webenv=webenv, query_key=query_key)
         data = fetch_handle.read()
         fetch_handle.close()
