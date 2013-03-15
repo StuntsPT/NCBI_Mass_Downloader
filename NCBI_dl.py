@@ -99,7 +99,7 @@ def Error_finder(output_file):
             ID = re.search("gi\|.*?\|",lines).group(0)[3:-1]
             verified_IDs.add(ID)
             new_file.write("\n" + lines) #TODO: remove first empty line from file
-        elif lines.startswith("<") or lines.startswith("\n"):
+        elif lines..strip().startswith("<") or lines.startswith("\n"):
             pass
         else:
             new_file.write(lines)
