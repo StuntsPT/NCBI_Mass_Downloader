@@ -106,6 +106,7 @@ def Error_finder(output_file):
 
     original_file.close()
     new_file.close()
+    remove(temp_file)
 
     return verified_IDs
 
