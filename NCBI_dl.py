@@ -1,6 +1,6 @@
 #!/usb/bin/python2
 
-#Usage: NCBI_dl.py "Query term" "database" outfile.fasta
+#Usage: NCBI_dl.py "user@email-address.com" """Query term" "database" outfile.fasta
 from Bio import Entrez
 from sys import argv
 from shutil import move
@@ -8,10 +8,10 @@ from os import remove
 import re
 
 #Set global vars:
-user_email = "f.pinamartins@gmail.com"
-database = argv[2]
-search_term = argv[1]
-output_file = argv[3]
+user_email = argv[1]
+database = argv[3]
+search_term = argv[2]
+output_file = argv[4]
 batch_size = 1000
 
 Entrez.email = user_email
