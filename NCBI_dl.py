@@ -1,6 +1,6 @@
 #!/usb/bin/python2
 
-#Usage: NCBI_dl.py "user@email-address.com" """Query term" "database" outfile.fasta
+#Usage: NCBI_dl.py "user@email-address.com" "Query term" "database" outfile.fasta
 from Bio import Entrez
 from sys import argv
 from shutil import move
@@ -59,8 +59,14 @@ def NCBI_history_fetch(output_file, count, IDs, webenv, query_key, Bsize):
         else:
             end = count
         print("Downloading record %i to %i of %i") % (start+1, end, count)
-        #TODO: Make it a "try" to enable retries on server errors
-        fetch_handle = Entrez.efetch(db=database, rettype="fasta", retstart=start, retmax=Bsize, webenv=webenv, query_key=query_key)
+        #Make sure that even on server errors the program carries on.
+        #If the servers are dead, well, you were not going anywhere anyway...
+        while True:
+            try:
+                fetch_handle = Entrez.efetch(db=database, rettype="fasta", retstart=start, retmax=Bsize, webenv=webenv, query_key=query_key)
+                break
+            except:
+                pass
         data = fetch_handle.read()
         fetch_handle.close()
         outfile.write(data)
@@ -81,7 +87,7 @@ def ReDownloader(output_file, IDs):
         print("All sequences were downloaded correctly. Good!")
         quit("Program finished without error.")
     else:
-        print("%s sequences did not download correctly. Retrying...") %(len(missing_IDs))
+        print("%s sequences did not download correctly (or at all). Retrying...") %(len(missing_IDs))
         count, IDs, webenv, query_key = NCBI_post(IDs)
         NCBI_history_fetch(output_file, count, IDs, webenv, query_key, 1000)
 
@@ -99,7 +105,7 @@ def Error_finder(output_file):
             ID = re.search("gi\|.*?\|",lines).group(0)[3:-1]
             verified_IDs.add(ID)
             new_file.write("\n" + lines) #TODO: remove first empty line from file
-        elif lines..strip().startswith("<") or lines.startswith("\n"):
+        elif lines.strip().startswith("<") or lines.startswith("\n"):
             pass
         else:
             new_file.write(lines)
