@@ -1,10 +1,11 @@
 #!/usb/bin/python2
 
 #Usage: NCBI_dl.py "user@email-address.com" "Query term" "database" outfile.fasta
+#Note that the program will not overwrite the outfile, but rather append sequences to it!
 from Bio import Entrez
 from sys import argv
 from shutil import move
-from os import remove
+from os import remove, stat
 import re
 
 #Set global vars:
@@ -48,28 +49,31 @@ def Record_processor(record):
 
     return count, IDs, webenv, query_key
 
-def NCBI_history_fetch(output_file, count, IDs, webenv, query_key, Bsize):
+def NCBI_history_fetch(output_file, count, IDs, webenv, query_key, Bsize, Run):
     #Fetches results from NCBI using history
-    outfile = open(output_file,'a')
-    if Bsize > count:
-        Bsize = count
-    for start in range(0,count,Bsize):
-        if start + Bsize < count:
-            end = start + Bsize
-        else:
-            end = count
-        print("Downloading record %i to %i of %i") % (start+1, end, count)
-        #Make sure that even on server errors the program carries on.
-        #If the servers are dead, well, you were not going anywhere anyway...
-        while True:
-            try:
-                fetch_handle = Entrez.efetch(db=database, rettype="fasta", retstart=start, retmax=Bsize, webenv=webenv, query_key=query_key)
-                break
-            except:
-                pass
-        data = fetch_handle.read()
-        fetch_handle.close()
-        outfile.write(data)
+    if Run == 1 and stat(output_file).st_size != 0:
+        ReDownloader(output_file, IDs)
+    else:
+        outfile = open(output_file,'a')
+        if Bsize > count:
+            Bsize = count
+        for start in range(0,count,Bsize):
+            if start + Bsize < count:
+                end = start + Bsize
+            else:
+                end = count
+            print("Downloading record %i to %i of %i") % (start+1, end, count)
+            #Make sure that even on server errors the program carries on.
+            #If the servers are dead, well, you were not going anywhere anyway...
+            while True:
+                try:
+                    fetch_handle = Entrez.efetch(db=database, rettype="fasta", retstart=start, retmax=Bsize, webenv=webenv, query_key=query_key)
+                    break
+                except:
+                    pass
+            data = fetch_handle.read()
+            fetch_handle.close()
+            outfile.write(data)
 
     outfile.close()
     ReDownloader(output_file, IDs)
@@ -89,7 +93,7 @@ def ReDownloader(output_file, IDs):
     else:
         print("%s sequences did not download correctly (or at all). Retrying...") %(len(missing_IDs))
         count, IDs, webenv, query_key = NCBI_post(IDs)
-        NCBI_history_fetch(output_file, count, IDs, webenv, query_key, 1000)
+        NCBI_history_fetch(output_file, count, IDs, webenv, query_key, 1000, 2)
 
 
 def Error_finder(output_file):
@@ -121,4 +125,4 @@ def Error_finder(output_file):
 #Run everything
 rec = NCBI_search(search_term)
 count, IDs, webenv, query_key = Record_processor(rec)
-NCBI_history_fetch(output_file, count, IDs, webenv, query_key, batch_size)
+NCBI_history_fetch(output_file, count, IDs, webenv, query_key, batch_size, 1)
