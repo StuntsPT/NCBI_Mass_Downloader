@@ -18,6 +18,10 @@ Just use the program with all the arguments and let the program download your se
 ##License:
 GPLv3
 
+##Known limitations:
+There is **NO** argument checking of any kind. If there is a problem with your arguments, you will see no *hand holding* of any kind.
+Just plain error messages.
+
 ##Found a bug?
 Or would like a feature added? Or maybe just wanto to drop some feedback?
 Just open an issue on github!
