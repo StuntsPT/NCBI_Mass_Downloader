@@ -125,6 +125,7 @@ class MainWindow(QtGui.QMainWindow):
 
         #Vertical stack
         self.main_layout.addLayout(self.titlebox)
+        self.main_layout.addStretch(1)
         self.main_layout.addLayout(self.email_database_box)
         self.main_layout.addLayout(self.queryBox)
         self.main_layout.addLayout(self.file_box)
