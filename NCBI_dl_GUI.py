@@ -158,7 +158,8 @@ class MainWindow(QtGui.QMainWindow):
             self.statusBar().showMessage("Ready")
 
     def fileHandle(self):
-        self.savefile = QtGui.QFileDialog.getSaveFileName(self, "Save to file...", "", "*.fasta")
+        self.savefile = QtGui.QFileDialog.getSaveFileName(self, "Save to file...", "", "Fasta Files (*.fasta);;All Files (*)")
+        self.save_file_line.setText(self.savefile)
         return self.savefile
 
 
