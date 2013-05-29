@@ -38,8 +38,41 @@ class MainWindow(QtGui.QMainWindow):
 
         #Email line edit and respective label
         self.email_line = QtGui.QLineEdit(self)
+        self.email_line.setFixedWidth(220)
         self.email_label = QtGui.QLabel(self)
         self.email_label.setText("Email address:")
+
+        #Databases to search and respective label
+        self.databases = QtGui.QComboBox(self)
+        self.databases.addItem("nucleotide")
+        self.databases.addItem("nuccore")
+        self.databases.addItem("nucgss")
+        self.databases.addItem("nucest")
+        self.databases.addItem("protein")
+        self.databases.addItem("genome")
+        self.databases.addItem("popset")
+        self.databases_label = QtGui.QLabel(self)
+        self.databases_label.setText("Database to search:")
+
+        #Search query line and respective label
+        self.search_query = QtGui.QLineEdit(self)
+        self.search_query.setFixedWidth(300)
+        self.search_query_label = QtGui.QLabel(self)
+        self.search_query_label.setText("Search Query:")
+
+        #File management
+        self.save_file_label = QtGui.QLabel(self)
+        self.save_file_label.setText("File Location:")
+
+        self.save_file_line = QtGui.QLineEdit(self)
+        self.save_file_line.setFixedWidth(300)
+
+        self.save_file_button = QtGui.QPushButton("Find...", self)
+        self.save_file_button.resize(dlbtn.sizeHint())
+        self.save_file_button.setToolTip('Click to select file location...')
+        self.save_file_button.clicked.connect(self.fileHandle)
+
+        #self.savefile = QtGui.QFileDialog.getSaveFileName(self, "Save to file...", "", ".fasta")
 
         #Container widget
         self.main_widget = QtGui.QWidget(self)
@@ -56,11 +89,27 @@ class MainWindow(QtGui.QMainWindow):
         self.progressBox = QtGui.QHBoxLayout()
         self.progressBox.addWidget(self.progbar)
 
+        #Box for search query
+        self.queryBox = QtGui.QHBoxLayout()
+        self.queryBox.addWidget(self.search_query_label)
+        self.queryBox.addWidget(self.search_query)
+        self.queryBox.addStretch(1)
+
         #Box for email and database
         self.email_database_box = QtGui.QHBoxLayout()
         self.email_database_box.addWidget(self.email_label)
         self.email_database_box.addWidget(self.email_line)
 
+        self.email_database_box.addStretch(1)
+
+        self.email_database_box.addWidget(self.databases_label)
+        self.email_database_box.addWidget(self.databases)
+
+        #Box for file management
+        self.file_box = QtGui.QHBoxLayout()
+        self.file_box.addWidget(self.save_file_label)
+        self.file_box.addWidget(self.save_file_line)
+        self.file_box.addWidget(self.save_file_button)
 
         #Box for Title
         self.titlebox = QtGui.QHBoxLayout()
@@ -77,6 +126,8 @@ class MainWindow(QtGui.QMainWindow):
         #Vertical stack
         self.main_layout.addLayout(self.titlebox)
         self.main_layout.addLayout(self.email_database_box)
+        self.main_layout.addLayout(self.queryBox)
+        self.main_layout.addLayout(self.file_box)
         self.main_layout.addStretch(1)
         self.main_layout.addLayout(self.progressBox)
         self.main_layout.addLayout(self.bottomBox)
@@ -105,6 +156,10 @@ class MainWindow(QtGui.QMainWindow):
             self.statusBar().showMessage("Downloading...")
         elif self.statusBar().currentMessage() == "Downloading...":
             self.statusBar().showMessage("Ready")
+
+    def fileHandle(self):
+        self.savefile = QtGui.QFileDialog.getSaveFileName(self, "Save to file...", "", "*.fasta")
+        return self.savefile
 
 
 def main():
