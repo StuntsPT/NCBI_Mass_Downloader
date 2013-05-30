@@ -173,8 +173,6 @@ class MainWindow(QtGui.QMainWindow):
         self.search_term = self.search_query.displayText()
         self.file_to_handle = self.save_file_line.displayText()
 
-        print(self.email_address, self.database_to_search, self.search_term, self.file_to_handle)
-
         downloader.runEverything(self.email_address, self.database_to_search, self.search_term, self.file_to_handle)
 
 def main():
