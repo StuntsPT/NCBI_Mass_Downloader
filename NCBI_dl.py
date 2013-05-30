@@ -40,7 +40,7 @@ def Record_processor(record):
 
     return count, IDs, webenv, query_key
 
-def NCBI_history_fetch(output_file, count, IDs, webenv, query_key, Bsize, Run):
+def NCBI_history_fetch(output_file, count, IDs, webenv, query_key, Bsize, Run, database):
     #Fetches results from NCBI using history
     try:
         a = open(output_file,'r')
@@ -64,19 +64,19 @@ def NCBI_history_fetch(output_file, count, IDs, webenv, query_key, Bsize, Run):
             #If the servers are dead, well, you were not going anywhere anyway...
             while True:
                 try:
-                    print(1)
                     fetch_handle = Entrez.efetch(db=database, rettype="fasta", retstart=start, retmax=Bsize, webenv=webenv, query_key=query_key)
                     break
                 except:
+                    print(1)
                     pass
             data = fetch_handle.read()
             fetch_handle.close()
             outfile.write(data)
 
     outfile.close()
-    ReDownloader(output_file, IDs)
+    ReDownloader(output_file, IDs, database)
 
-def ReDownloader(output_file, IDs):
+def ReDownloader(output_file, IDs, database):
     #Check for missing sequences:
     print("Checking for sequences that did not download... Please wait.")
     ver_IDs = Error_finder(output_file)
@@ -91,7 +91,7 @@ def ReDownloader(output_file, IDs):
     else:
         print("%s sequences did not download correctly (or at all). Retrying...") %(len(missing_IDs))
         count, IDs, webenv, query_key = NCBI_post(IDs)
-        NCBI_history_fetch(output_file, count, IDs, webenv, query_key, 1000, 2)
+        NCBI_history_fetch(output_file, count, IDs, webenv, query_key, 1000, 2, database)
 
 
 def Error_finder(output_file):
@@ -141,7 +141,7 @@ def runEverything(user_email, database, search_term, output_file):
 
     rec = NCBI_search(search_term, database)
     count, IDs, webenv, query_key = Record_processor(rec)
-    NCBI_history_fetch(output_file, count, IDs, webenv, query_key, batch_size, 1)
+    NCBI_history_fetch(output_file, count, IDs, webenv, query_key, batch_size, 1, database)
 
 if __name__ == '__main__':
     main()
