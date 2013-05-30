@@ -1,4 +1,4 @@
-#!/usb/bin/python2
+#!/usb/bin/python3
 
 #Usage: NCBI_dl.py "user@email-address.com" "Query term" "database" outfile.fasta
 #Note that the program will not overwrite the outfile, but rather append sequences to it!
@@ -49,7 +49,7 @@ def NCBI_history_fetch(output_file, count, IDs, webenv, query_key, Bsize, Run, d
         a = open(output_file,'w')
         a.close()
     if Run == 1 and stat(output_file).st_size != 0:
-        ReDownloader(output_file, IDs)
+        ReDownloader(output_file, IDs, database)
     else:
         outfile = open(output_file,'a')
         if Bsize > count:
@@ -120,19 +120,12 @@ def Error_finder(output_file):
 
 def main():
     #Set vars or get them from the GUI:
-    #global user_email, database, search_term, output_file, batch_size
-    if len(argv) > 1:
+    user_email = argv[1]
+    database = argv[3]
+    search_term = argv[2]
+    output_file = argv[4]
 
-        user_email = argv[1]
-        database = argv[3]
-        search_term = argv[2]
-        output_file = argv[4]
-
-        runEverything(user_email, database, search_term, output_file)
-
-    else:
-        import NCBI_dl_GUI
-        NCBI_dl_GUI.main()
+    runEverything(user_email, database, search_term, output_file)
 
 def runEverything(user_email, database, search_term, output_file):
     #Run the functions in order

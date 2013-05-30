@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python3
 
 import sys
 import NCBI_dl
@@ -170,13 +170,18 @@ class MainWindow(QtGui.QMainWindow):
         self.search_term = self.search_query.displayText()
         self.file_to_handle = self.save_file_line.displayText()
 
+        print(self.email_address, self.database_to_search, self.search_term, self.file_to_handle)
+
         NCBI_dl.runEverything(self.email_address, self.database_to_search, self.search_term, self.file_to_handle)
 
 def main():
 
-    app = QtGui.QApplication(sys.argv)
-    ex = MainWindow()
-    sys.exit(app.exec_())
+    if len(sys.argv) < 2:
+        app = QtGui.QApplication(sys.argv)
+        ex = MainWindow()
+        sys.exit(app.exec_())
+    else:
+        NCBI_dl.runEverything(sys.argv[1],sys.argv[3],sys.argv[2],sys.argv[4])
 
 
 if __name__ == '__main__':
