@@ -1,6 +1,7 @@
 #!/usr/bin/python2
 
 import sys
+import NCBI_dl
 from PyQt4 import QtGui, QtCore
 
 class MainWindow(QtGui.QMainWindow):
@@ -171,5 +172,5 @@ def main():
     sys.exit(app.exec_())
 
 
-if __name__ == '__main__':
-    main()
+#if __name__ == '__main__':
+main()

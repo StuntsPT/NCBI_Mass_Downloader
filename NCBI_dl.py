@@ -8,14 +8,14 @@ from shutil import move
 from os import remove, stat
 import re
 
-#Set global vars:
-user_email = argv[1]
-database = argv[3]
-search_term = argv[2]
-output_file = argv[4]
-batch_size = 1000
+##Set global vars:
+#user_email = argv[1]
+#database = argv[3]
+#search_term = argv[2]
+#output_file = argv[4]
+#batch_size = 1000
 
-Entrez.email = user_email
+#Entrez.email = user_email
 
 def NCBI_search(ST):
     #Submit search to NCBI and return the records
@@ -120,9 +120,25 @@ def Error_finder(output_file):
 
     return verified_IDs
 
+def main():
+    #Set vars:
+    if len(argv) > 1:
+        global user_email, database, search_term, output_file, batch_size
+        user_email = argv[1]
+        database = argv[3]
+        search_term = argv[2]
+        output_file = argv[4]
+        batch_size = 1000
 
+        Entrez.email = user_email
 
-#Run everything
-rec = NCBI_search(search_term)
-count, IDs, webenv, query_key = Record_processor(rec)
-NCBI_history_fetch(output_file, count, IDs, webenv, query_key, batch_size, 1)
+        #Run everything
+        rec = NCBI_search(search_term)
+        count, IDs, webenv, query_key = Record_processor(rec)
+        NCBI_history_fetch(output_file, count, IDs, webenv, query_key, batch_size, 1)
+
+    else:
+        import NCBI_dl_GUI
+
+if __name__ == '__main__':
+    main()
