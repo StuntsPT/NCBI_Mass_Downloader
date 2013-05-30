@@ -1,7 +1,7 @@
 #NCBI Mass Sequence Downloader
 
 ##Description:
-This program will download sequences "*en masse*" from several NCBI databases (at the user's chioce).
+This program will download sequences *en masse* from several NCBI databases (at the user's chioce).
 
 ##Usage:
     python2 NCBI_dl.py "user@email-address.com" "Query term" "database" outfile.fasta
