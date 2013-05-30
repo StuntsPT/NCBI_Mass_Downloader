@@ -17,6 +17,7 @@ class MainWindow(QtGui.QMainWindow):
         dlbtn = QtGui.QPushButton("Download!", self)
         dlbtn.setToolTip('Click to start downloading...')
         dlbtn.clicked.connect(self.statusChange)
+        dlbtn.clicked.connect(self.runOnClick)
         dlbtn.resize(dlbtn.sizeHint())
 
         #Quit button
@@ -162,8 +163,14 @@ class MainWindow(QtGui.QMainWindow):
     def fileHandle(self):
         self.savefile = QtGui.QFileDialog.getSaveFileName(self, "Save to file...", "", "Fasta Files (*.fasta);;All Files (*)")
         self.save_file_line.setText(self.savefile)
-        return self.savefile
 
+    def runOnClick(self):
+        self.email_address = self.email_line.displayText()
+        self.database_to_search = self.databases.currentText()
+        self.search_term = self.search_query.displayText()
+        self.file_to_handle = self.save_file_line.displayText()
+
+        NCBI_dl.runEverything(self.email_address, self.database_to_search, self.search_term, self.file_to_handle)
 
 def main():
 
@@ -172,5 +179,5 @@ def main():
     sys.exit(app.exec_())
 
 
-#if __name__ == '__main__':
-main()
+if __name__ == '__main__':
+    main()

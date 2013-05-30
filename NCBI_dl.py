@@ -8,16 +8,7 @@ from shutil import move
 from os import remove, stat
 import re
 
-##Set global vars:
-#user_email = argv[1]
-#database = argv[3]
-#search_term = argv[2]
-#output_file = argv[4]
-#batch_size = 1000
-
-#Entrez.email = user_email
-
-def NCBI_search(ST):
+def NCBI_search(ST, database):
     #Submit search to NCBI and return the records
     handle = Entrez.esearch(db=database,term=ST,usehistory="y",retmax=10000000)
     record = Entrez.read(handle)
@@ -51,6 +42,12 @@ def Record_processor(record):
 
 def NCBI_history_fetch(output_file, count, IDs, webenv, query_key, Bsize, Run):
     #Fetches results from NCBI using history
+    try:
+        a = open(output_file,'r')
+        a.close()
+    except:
+        a = open(output_file,'w')
+        a.close()
     if Run == 1 and stat(output_file).st_size != 0:
         ReDownloader(output_file, IDs)
     else:
@@ -67,6 +64,7 @@ def NCBI_history_fetch(output_file, count, IDs, webenv, query_key, Bsize, Run):
             #If the servers are dead, well, you were not going anywhere anyway...
             while True:
                 try:
+                    print(1)
                     fetch_handle = Entrez.efetch(db=database, rettype="fasta", retstart=start, retmax=Bsize, webenv=webenv, query_key=query_key)
                     break
                 except:
@@ -121,24 +119,29 @@ def Error_finder(output_file):
     return verified_IDs
 
 def main():
-    #Set vars:
+    #Set vars or get them from the GUI:
+    #global user_email, database, search_term, output_file, batch_size
     if len(argv) > 1:
-        global user_email, database, search_term, output_file, batch_size
+
         user_email = argv[1]
         database = argv[3]
         search_term = argv[2]
         output_file = argv[4]
-        batch_size = 1000
 
-        Entrez.email = user_email
-
-        #Run everything
-        rec = NCBI_search(search_term)
-        count, IDs, webenv, query_key = Record_processor(rec)
-        NCBI_history_fetch(output_file, count, IDs, webenv, query_key, batch_size, 1)
+        runEverything(user_email, database, search_term, output_file)
 
     else:
         import NCBI_dl_GUI
+        NCBI_dl_GUI.main()
+
+def runEverything(user_email, database, search_term, output_file):
+    #Run the functions in order
+    batch_size = 1000
+    Entrez.email = user_email
+
+    rec = NCBI_search(search_term, database)
+    count, IDs, webenv, query_key = Record_processor(rec)
+    NCBI_history_fetch(output_file, count, IDs, webenv, query_key, batch_size, 1)
 
 if __name__ == '__main__':
     main()
