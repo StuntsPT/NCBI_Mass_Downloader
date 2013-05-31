@@ -18,7 +18,7 @@ Notes:
 * *Query term* can take any argument just like in the website search engine (eg. "Lacerta monticola[organism]").
 
 ##Dependencies:
-* pyhton2 (and the standard lib);
+* pyhton3 (and the standard lib);
 * [biopython](https://github.com/biopython/biopython);
 * [PyQt4](http://www.riverbankcomputing.com/software/pyqt/intro) for the GUI version;
 
