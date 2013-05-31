@@ -75,7 +75,7 @@ def NCBI_history_fetch(output_file, count, IDs, webenv, query_key, Bsize, Run, d
                 end = start + Bsize
             else:
                 end = count
-            print("Downloading record %i to %i of %i") % (start+1, end, count)
+            print("Downloading record %i to %i of %i" %(start+1, end, count))
             #Make sure that even on server errors the program carries on.
             #If the servers are dead, well, you were not going anywhere anyway...
             while True:
