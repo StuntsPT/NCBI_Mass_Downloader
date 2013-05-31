@@ -15,7 +15,7 @@
 #  MA 02110-1301, USA.
 #
 
-#Usage: NCBI_dl.py "user@email-address.com" "Query term" "database" outfile.fasta
+#Usage: NCBI_downloader.py "user@email-address.com" "Query term" "database" outfile.fasta
 #Or run without arguments for a GUI version.
 
 import sys
