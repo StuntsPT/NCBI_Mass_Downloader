@@ -201,145 +201,143 @@ class MainWindow(QtGui.QMainWindow):
         #return self.email_address, self.database_to_search, self.search_term, self.file_to_handle, 1
 
 class Downloader():
-        def __init__(self, email, database, term, outfile, gui):
-            self.email = email
-            self.database = database
-            self. term = term
-            self.outfile = outfile
-            self.gui = gui
-            #super(Downloader, self).__init__()
+    def __init__(self, email, database, term, outfile, gui):
+        self.email = email
+        self.database = database
+        self. term = term
+        self.outfile = outfile
+        self.gui = gui
+        #super(Downloader, self).__init__()
 
-        def NCBI_search(self):
-            #Submit search to NCBI and return the records
-            handle = Entrez.esearch(db=self.database,term=self.term,usehistory="y",retmax=10000000)
-            record = Entrez.read(handle)
-            handle.close()
+    def NCBI_search(self):
+        #Submit search to NCBI and return the records
+        handle = Entrez.esearch(db=self.database,term=self.term,usehistory="y",retmax=10000000)
+        record = Entrez.read(handle)
+        handle.close()
 
-            return record
+        return record
 
-        def NCBI_post(self, IDs):
-            #Submit id_list to NCBI via epost and return the records
-            IDs_string = ",".join(IDs)
-            handle = Entrez.epost(self.database,id=IDs_string,retmax=10000000)
-            record = Entrez.read(handle)
-            handle.close()
+    def NCBI_post(self, IDs):
+        #Submit id_list to NCBI via epost and return the records
+        IDs_string = ",".join(IDs)
+        handle = Entrez.epost(self.database,id=IDs_string,retmax=10000000)
+        record = Entrez.read(handle)
+        handle.close()
 
-            count = len(IDs)
-            webenv = record["WebEnv"]
-            query_key = record["QueryKey"]
+        count = len(IDs)
+        webenv = record["WebEnv"]
+        query_key = record["QueryKey"]
 
-            return count, IDs, webenv, query_key
+        return count, IDs, webenv, query_key
 
-        def Record_processor(self,record):
-            #Processes the record into sparate usefull information
-            count = int(record["Count"])
-            IDs = record["IdList"]
-            webenv = record["WebEnv"]
-            query_key = record["QueryKey"]
+    def Record_processor(self,record):
+        #Processes the record into sparate usefull information
+        count = int(record["Count"])
+        IDs = record["IdList"]
+        webenv = record["WebEnv"]
+        query_key = record["QueryKey"]
 
-            assert count == len(IDs)
+        assert count == len(IDs)
 
-            return count, IDs, webenv, query_key
+        return count, IDs, webenv, query_key
 
-        def NCBI_history_fetch(self, count, IDs, webenv, query_key, Bsize, Run):
-            #Fetches results from NCBI using history
-            try:
-                a = open(self.outfile,'r')
-                a.close()
-            except:
-                a = open(self.outfile,'w')
-                a.close()
-            if Run == 1 and stat(self.outfile).st_size != 0:
-                self.ReDownloader(IDs)
-            else:
-
-                outfile = open(self.outfile,'a')
-                if self.gui == 1:
-                        self.max_seq.emit(count)
-                if Bsize > count:
-                    Bsize = count
-                for start in range(0,count,Bsize):
-                    if start + Bsize < count:
-                        end = start + Bsize
-                    else:
-                        end = count
-                    print("Downloading record %i to %i of %i" %(start+1, end, count))
-
-                    if self.gui == 1:
-                        self.prog_data.emit(start)
-
-                    #Make sure that even on server errors the program carries on.
-                    #If the servers are dead, well, you were not going anywhere anyway...
-                    while True:
-                        try:
-                            fetch_handle = Entrez.efetch(db=self.database, rettype="fasta", retstart=start, retmax=Bsize, webenv=webenv, query_key=query_key)
-                            break
-                        except:
-                            pass
-                    data = fetch_handle.read()
-                    fetch_handle.close()
-                    outfile.write(data)
-
-            outfile.close()
+    def NCBI_history_fetch(self, count, IDs, webenv, query_key, Bsize, Run):
+        #Fetches results from NCBI using history
+        try:
+            a = open(self.outfile,'r')
+            a.close()
+        except:
+            a = open(self.outfile,'w')
+            a.close()
+        if Run == 1 and stat(self.outfile).st_size != 0:
             self.ReDownloader(IDs)
+        else:
 
-        def ReDownloader(self, IDs):
-            #Check for missing sequences:
-            print("Checking for sequences that did not download... Please wait.")
-            ver_IDs = self.Error_finder()
-            missing_IDs = set()
-            for i in IDs:
-                if i not in ver_IDs:
-                    missing_IDs.add(i)
-            IDs = missing_IDs #Improve performance on subsequent runs
-            if len(missing_IDs) == 0:
-                print("All sequences were downloaded correctly. Good!")
-                if self.gui == 0:
-                    quit("Program finished without error.")
-            else:
-                print("%s sequences did not download correctly (or at all). Retrying..." %(len(missing_IDs)))
-                count, IDs, webenv, query_key = self.NCBI_post(IDs)
-                self.NCBI_history_fetch(count, IDs, webenv, query_key, 1000, 2)
-
-        def Error_finder(self):
-            #Looks for errors in the output fasta and retruns a list of necessary retries
-            temp_file = self.outfile + ".tmp"
-            move(self.outfile, temp_file)
-            original_file = open(temp_file,'r')
-            new_file = open(self.outfile,'w')
-            verified_IDs = set()
-
-            for lines in original_file:
-                if lines.startswith(">"):
-                    ID = re.search("gi\|.*?\|",lines).group(0)[3:-1]
-                    verified_IDs.add(ID)
-                    new_file.write("\n" + lines) #TODO: remove first empty line from file
-                elif lines.strip().startswith("<") or lines.startswith("\n"):
-                    pass
+            outfile = open(self.outfile,'a')
+            if self.gui == 1:
+                    self.max_seq.emit(count)
+            if Bsize > count:
+                Bsize = count
+            for start in range(0,count,Bsize):
+                if start + Bsize < count:
+                    end = start + Bsize
                 else:
-                    new_file.write(lines)
+                    end = count
+                print("Downloading record %i to %i of %i" %(start+1, end, count))
 
-            original_file.close()
-            new_file.close()
-            remove(temp_file)
+                if self.gui == 1:
+                    self.prog_data.emit(start)
 
-            return verified_IDs
+                #Make sure that even on server errors the program carries on.
+                #If the servers are dead, well, you were not going anywhere anyway...
+                while True:
+                    try:
+                        fetch_handle = Entrez.efetch(db=self.database, rettype="fasta", retstart=start, retmax=Bsize, webenv=webenv, query_key=query_key)
+                        break
+                    except:
+                        pass
+                data = fetch_handle.read()
+                fetch_handle.close()
+                outfile.write(data)
 
-        def runEverything(self):
-            #Run the functions in order
-            batch_size = 1000
-            Entrez.email = self.email
+        outfile.close()
+        self.ReDownloader(IDs)
 
-            rec = self.NCBI_search()
-            count, IDs, webenv, query_key = self.Record_processor(rec)
-            self.NCBI_history_fetch(count, IDs, webenv, query_key, batch_size, 1)
+    def ReDownloader(self, IDs):
+        #Check for missing sequences:
+        print("Checking for sequences that did not download... Please wait.")
+        ver_IDs = self.Error_finder()
+        missing_IDs = set()
+        for i in IDs:
+            if i not in ver_IDs:
+                missing_IDs.add(i)
+        IDs = missing_IDs #Improve performance on subsequent runs
+        if len(missing_IDs) == 0:
+            print("All sequences were downloaded correctly. Good!")
+            if self.gui == 0:
+                quit("Program finished without error.")
+        else:
+            print("%s sequences did not download correctly (or at all). Retrying..." %(len(missing_IDs)))
+            count, IDs, webenv, query_key = self.NCBI_post(IDs)
+            self.NCBI_history_fetch(count, IDs, webenv, query_key, 1000, 2)
+
+    def Error_finder(self):
+        #Looks for errors in the output fasta and retruns a list of necessary retries
+        temp_file = self.outfile + ".tmp"
+        move(self.outfile, temp_file)
+        original_file = open(temp_file,'r')
+        new_file = open(self.outfile,'w')
+        verified_IDs = set()
+
+        for lines in original_file:
+            if lines.startswith(">"):
+                ID = re.search("gi\|.*?\|",lines).group(0)[3:-1]
+                verified_IDs.add(ID)
+                new_file.write("\n" + lines) #TODO: remove first empty line from file
+            elif lines.strip().startswith("<") or lines.startswith("\n"):
+                pass
+            else:
+                new_file.write(lines)
+
+        original_file.close()
+        new_file.close()
+        remove(temp_file)
+
+        return verified_IDs
+
+    def runEverything(self):
+        #Run the functions in order
+        batch_size = 1000
+        Entrez.email = self.email
+
+        rec = self.NCBI_search()
+        count, IDs, webenv, query_key = self.Record_processor(rec)
+        self.NCBI_history_fetch(count, IDs, webenv, query_key, batch_size, 1)
 
 class DownloaderGui(Downloader, QtCore.QThread):
+    #Just add PyQt magic to Downloader() and create emmiters in constructor.
     prog_data = QtCore.pyqtSignal(int)
     max_seq = QtCore.pyqtSignal(int)
-
-
-
 
 
 def main():
