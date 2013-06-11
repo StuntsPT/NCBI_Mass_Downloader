@@ -200,14 +200,14 @@ class MainWindow(QtGui.QMainWindow):
         Get_data.runEverything()
         #return self.email_address, self.database_to_search, self.search_term, self.file_to_handle, 1
 
-class Downloader():
+class Downloader(object):
     def __init__(self, email, database, term, outfile, gui):
         self.email = email
         self.database = database
         self. term = term
         self.outfile = outfile
         self.gui = gui
-        #super(Downloader, self).__init__()
+        super(Downloader, self).__init__()
 
     def NCBI_search(self):
         #Submit search to NCBI and return the records
@@ -266,7 +266,7 @@ class Downloader():
                 print("Downloading record %i to %i of %i" %(start+1, end, count))
 
                 if self.gui == 1:
-                    self.prog_data.emit(start)
+                    self.prog_data.emit(end)
 
                 #Make sure that even on server errors the program carries on.
                 #If the servers are dead, well, you were not going anywhere anyway...
