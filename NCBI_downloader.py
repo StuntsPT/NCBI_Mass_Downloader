@@ -194,16 +194,20 @@ class MainWindow(QtGui.QMainWindow):
 
         #TODO: Implement argument detection. (trust no-one)
 
-        Get_data = Downloader(self.email_address, self.database_to_search, self.search_term, self.file_to_handle, "GUI")
+        Get_data = DownloaderGui(self.email_address, self.database_to_search, self.search_term, self.file_to_handle, 1)
+        Get_data.max_seq.connect(self.progbar.setMaximum)
+        Get_data.prog_data.connect(self.progbar.setValue)
         Get_data.runEverything()
+        #return self.email_address, self.database_to_search, self.search_term, self.file_to_handle, 1
 
 class Downloader():
-        def __init__(self, email, database, term, outfile, method):
+        def __init__(self, email, database, term, outfile, gui):
             self.email = email
             self.database = database
             self. term = term
             self.outfile = outfile
-            self.method = method
+            self.gui = gui
+            #super(Downloader, self).__init__()
 
         def NCBI_search(self):
             #Submit search to NCBI and return the records
@@ -216,7 +220,7 @@ class Downloader():
         def NCBI_post(self, IDs):
             #Submit id_list to NCBI via epost and return the records
             IDs_string = ",".join(IDs)
-            handle = Entrez.epost(database,id=IDs_string,retmax=10000000)
+            handle = Entrez.epost(self.database,id=IDs_string,retmax=10000000)
             record = Entrez.read(handle)
             handle.close()
 
@@ -248,7 +252,10 @@ class Downloader():
             if Run == 1 and stat(self.outfile).st_size != 0:
                 self.ReDownloader(IDs)
             else:
+
                 outfile = open(self.outfile,'a')
+                if self.gui == 1:
+                        self.max_seq.emit(count)
                 if Bsize > count:
                     Bsize = count
                 for start in range(0,count,Bsize):
@@ -257,6 +264,10 @@ class Downloader():
                     else:
                         end = count
                     print("Downloading record %i to %i of %i" %(start+1, end, count))
+
+                    if self.gui == 1:
+                        self.prog_data.emit(start)
+
                     #Make sure that even on server errors the program carries on.
                     #If the servers are dead, well, you were not going anywhere anyway...
                     while True:
@@ -264,7 +275,6 @@ class Downloader():
                             fetch_handle = Entrez.efetch(db=self.database, rettype="fasta", retstart=start, retmax=Bsize, webenv=webenv, query_key=query_key)
                             break
                         except:
-                            print(1)
                             pass
                     data = fetch_handle.read()
                     fetch_handle.close()
@@ -284,11 +294,12 @@ class Downloader():
             IDs = missing_IDs #Improve performance on subsequent runs
             if len(missing_IDs) == 0:
                 print("All sequences were downloaded correctly. Good!")
-                quit("Program finished without error.")
+                if self.gui == 0:
+                    quit("Program finished without error.")
             else:
-                print("%s sequences did not download correctly (or at all). Retrying...") %(len(missing_IDs))
-                count, IDs, webenv, query_key = NCBI_post(IDs)
-                self.NCBI_history_fetch(count, IDs, webenv, query_key, 1000, 2, self.database)
+                print("%s sequences did not download correctly (or at all). Retrying..." %(len(missing_IDs)))
+                count, IDs, webenv, query_key = self.NCBI_post(IDs)
+                self.NCBI_history_fetch(count, IDs, webenv, query_key, 1000, 2)
 
         def Error_finder(self):
             #Looks for errors in the output fasta and retruns a list of necessary retries
@@ -323,14 +334,24 @@ class Downloader():
             count, IDs, webenv, query_key = self.Record_processor(rec)
             self.NCBI_history_fetch(count, IDs, webenv, query_key, batch_size, 1)
 
+class DownloaderGui(Downloader, QtCore.QThread):
+    prog_data = QtCore.pyqtSignal(int)
+    max_seq = QtCore.pyqtSignal(int)
+
+
+
+
+
 def main():
 
     if len(sys.argv) < 2:
         app = QtGui.QApplication(sys.argv)
         ex = MainWindow()
         sys.exit(app.exec_())
+        print("OK")
     else:
-        Downloader.runEverything(sys.argv[1],sys.argv[3],sys.argv[2],sys.argv[4])
+        dl = Downloader(sys.argv[1],sys.argv[3],sys.argv[2],sys.argv[4], 0)
+        dl.runEverything()
 
 
 if __name__ == '__main__':
