@@ -165,17 +165,6 @@ class MainWindow(QtGui.QMainWindow):
         #Draw it!
         self.show()
 
-    def closeEvent(self, event):
-
-        reply = QtGui.QMessageBox.question(self, 'Really quit?',
-            "Are you sure you want to quit?", QtGui.QMessageBox.Yes |
-            QtGui.QMessageBox.No, QtGui.QMessageBox.No)
-
-        if reply == QtGui.QMessageBox.Yes:
-            event.accept()
-        else:
-            event.ignore()
-
     def statusChange(self):
         if self.statusBar().currentMessage() == "Ready":
             self.statusBar().showMessage("Downloading...")
@@ -194,11 +183,34 @@ class MainWindow(QtGui.QMainWindow):
 
         #TODO: Implement argument detection. (trust no-one)
 
-        Get_data = DownloaderGui(self.email_address, self.database_to_search, self.search_term, self.file_to_handle, 1)
-        Get_data.max_seq.connect(self.progbar.setMaximum)
-        Get_data.prog_data.connect(self.progbar.setValue)
-        Get_data.runEverything()
-        #return self.email_address, self.database_to_search, self.search_term, self.file_to_handle, 1
+        #Get_data = DownloaderGui(self.email_address, self.database_to_search, self.search_term, self.file_to_handle, 1)
+        #Get_data.max_seq.connect(self.progbar.setMaximum)
+        #Get_data.prog_data.connect(self.progbar.setValue)
+        #Get_data.runEverything()
+
+        a = self.DlFinished()
+        if a == 2097152:
+            self.close()
+        else:
+            self.cleanForms()
+            self.statusChange()
+
+    def cleanForms(self):
+        self.search_query.setText("")
+        self.save_file_line.setText("")
+
+    def DlFinished(self):
+        #Create message box
+        self.question = QtGui.QMessageBox(self)
+        self.question.setIcon(QtGui.QMessageBox.Question)
+        self.question.setText("Download finished sucessfully!")
+        self.question.setInformativeText("Would you like to reset the froms and make another download or close the program?")
+        self.question.setStandardButtons(QtGui.QMessageBox.Reset | QtGui.QMessageBox.Close)
+
+        a = self.question.exec_()
+
+        return a
+
 
 class Downloader(object):
     def __init__(self, email, database, term, outfile, gui):
@@ -346,7 +358,6 @@ def main():
         app = QtGui.QApplication(sys.argv)
         ex = MainWindow()
         sys.exit(app.exec_())
-        print("OK")
     else:
         dl = Downloader(sys.argv[1],sys.argv[3],sys.argv[2],sys.argv[4], 0)
         dl.runEverything()
