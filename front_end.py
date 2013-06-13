@@ -210,13 +210,13 @@ class MainWindow(QtGui.QMainWindow):
     def sanityCheck(self):
         #Check if the variables to send to the back end make sense
         if re.match("[a-zA-Z0-9_.]*@\w*.\w*$", self.email_address) == None:
-            self.fail = QtGui.QMessageBox.critical(self, "Problem with email address", "Email address does not seem valid. Is there a typo? Please correct it.", QtGui.QMessageBox.Ok)
+            self.fail = QtGui.QMessageBox.warning(self, "Problem with email address", "Email address does not seem valid. Is there a typo? Please correct it.", QtGui.QMessageBox.Ok)
             return 0
         elif len(self.search_term) < 3:
-            self.fail = QtGui.QMessageBox.critical(self, "Problem with search query", "Your search query is too short. It should have at least 3 characters.", QtGui.QMessageBox.Ok)
+            self.fail = QtGui.QMessageBox.warning(self, "Problem with search query", "Your search query is too short. It should have at least 3 characters.", QtGui.QMessageBox.Ok)
             return 0
         elif (os.path.exists(os.path.dirname(self.file_to_handle)) == False) or (os.access(os.path.dirname(self.file_to_handle), os.W_OK) == False):
-            self.fail = QtGui.QMessageBox.critical(self, "Problem with path or permissions", "The path leading to your output file does not seem to exist or you don't have write permissions for it. Please correct it and try again.", QtGui.QMessageBox.Ok)
+            self.fail = QtGui.QMessageBox.warning(self, "Problem with path or permissions", "The path leading to your output file does not seem to exist or you don't have write permissions for it. Please correct it and try again.", QtGui.QMessageBox.Ok)
             return 0
         else:
             return 1
