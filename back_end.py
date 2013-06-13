@@ -158,7 +158,9 @@ class Downloader(object):
         count, IDs, webenv, query_key = self.Record_processor(rec)
         self.NCBI_history_fetch(count, IDs, webenv, query_key, batch_size, 1)
 
+
 def main():
+
     dl = Downloader(sys.argv[1],sys.argv[3],sys.argv[2],sys.argv[4], 0)
     dl.runEverything()
 

@@ -183,8 +183,8 @@ class MainWindow(QtGui.QMainWindow):
         Get_data.prog_data.connect(self.progbar.setValue)
         Get_data.runEverything()
 
-        a = self.DlFinished()
-        if a == 2097152:
+        reply = self.DlFinished()
+        if reply == 2097152:
             self.close()
         else:
             self.cleanForms()
@@ -202,14 +202,15 @@ class MainWindow(QtGui.QMainWindow):
         self.question.setInformativeText("Would you like to reset the froms and make another download or close the program?")
         self.question.setStandardButtons(QtGui.QMessageBox.Reset | QtGui.QMessageBox.Close)
 
-        a = self.question.exec_()
+        reply = self.question.exec_()
 
-        return a
+        return reply
 
 class DownloaderGui(Downloader, QtCore.QThread):
     #Just add PyQt magic to Downloader() and create emmiters in constructor.
     prog_data = QtCore.pyqtSignal(int)
     max_seq = QtCore.pyqtSignal(int)
+
 
 def main():
 
