@@ -172,10 +172,11 @@ class MainWindow(QtGui.QMainWindow):
         self.save_file_line.setText(self.savefile)
 
     def runOnClick(self):
-        self.email_address = self.email_line.displayText()
-        self.database_to_search = self.databases.currentText()
-        self.search_term = self.search_query.displayText()
-        self.file_to_handle = self.save_file_line.displayText()
+        #str() method used for python2 compatibility (python2 does not handle QString natively - just str)
+        self.email_address = str(self.email_line.displayText())
+        self.database_to_search = str(self.databases.currentText())
+        self.search_term = str(self.search_query.displayText())
+        self.file_to_handle = str(self.save_file_line.displayText())
 
         if self.sanityCheck() == 1:
 
@@ -194,6 +195,7 @@ class MainWindow(QtGui.QMainWindow):
     def cleanForms(self):
         self.search_query.setText("")
         self.save_file_line.setText("")
+        #TODO: Reset progress bar!
 
     def DlFinished(self):
         #Create message box for finished download
