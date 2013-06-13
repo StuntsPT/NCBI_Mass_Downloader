@@ -195,6 +195,7 @@ class MainWindow(QtGui.QMainWindow):
     def cleanForms(self):
         self.search_query.setText("")
         self.save_file_line.setText("")
+        self.progbar.setValue(0)
         #TODO: Reset progress bar!
 
     def DlFinished(self):
