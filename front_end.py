@@ -17,6 +17,7 @@
 
 import sys
 import re
+import os
 
 from PyQt4 import QtGui, QtCore
 from back_end import Downloader
@@ -176,26 +177,26 @@ class MainWindow(QtGui.QMainWindow):
         self.search_term = self.search_query.displayText()
         self.file_to_handle = self.save_file_line.displayText()
 
-        #TODO: Implement argument detection. (trust no-one)
+        if self.sanityCheck() == 1:
 
-        Get_data = DownloaderGui(self.email_address, self.database_to_search, self.search_term, self.file_to_handle, 1)
-        Get_data.max_seq.connect(self.progbar.setMaximum)
-        Get_data.prog_data.connect(self.progbar.setValue)
-        Get_data.runEverything()
+            Get_data = DownloaderGui(self.email_address, self.database_to_search, self.search_term, self.file_to_handle, 1)
+            Get_data.max_seq.connect(self.progbar.setMaximum)
+            Get_data.prog_data.connect(self.progbar.setValue)
+            Get_data.runEverything()
 
-        reply = self.DlFinished()
-        if reply == 2097152:
-            self.close()
-        else:
-            self.cleanForms()
-            self.statusChange()
+
+            if self.DlFinished() == 2097152:
+                self.close()
+            else:
+                self.cleanForms()
+                self.statusChange()
 
     def cleanForms(self):
         self.search_query.setText("")
         self.save_file_line.setText("")
 
     def DlFinished(self):
-        #Create message box
+        #Create message box for finished download
         self.question = QtGui.QMessageBox(self)
         self.question.setIcon(QtGui.QMessageBox.Question)
         self.question.setText("Download finished sucessfully!")
@@ -205,6 +206,20 @@ class MainWindow(QtGui.QMainWindow):
         reply = self.question.exec_()
 
         return reply
+
+    def sanityCheck(self):
+        #Check if the variables to send to the back end make sense
+        if re.match("[a-zA-Z0-9_.]*@\w*.\w*$", self.email_address) == None:
+            self.fail = QtGui.QMessageBox.critical(self, "Problem with email address", "Email address does not seem valid. Is there a typo? Please correct it.", QtGui.QMessageBox.Ok)
+            return 0
+        elif len(self.search_term) < 3:
+            self.fail = QtGui.QMessageBox.critical(self, "Problem with search query", "Your search query is too short. It should have at least 3 characters.", QtGui.QMessageBox.Ok)
+            return 0
+        elif (os.path.exists(os.path.dirname(self.file_to_handle)) == False) or (os.access(os.path.dirname(self.file_to_handle), os.W_OK) == False):
+            self.fail = QtGui.QMessageBox.critical(self, "Problem with path or permissions", "The path leading to your output file does not seem to exist or you don't have write permissions for it. Please correct it and try again.", QtGui.QMessageBox.Ok)
+            return 0
+        else:
+            return 1
 
 class DownloaderGui(Downloader, QtCore.QThread):
     #Just add PyQt magic to Downloader() and create emmiters in constructor.
