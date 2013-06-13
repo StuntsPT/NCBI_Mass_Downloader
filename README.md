@@ -2,15 +2,16 @@
 
 ##Description:
 This program will download sequences *en masse* from several NCBI databases (at the user's chioce).
+It will run on both python2 and python3!
 
 ##Usage:
 To use the GUI version:
 
-    python3 NCBI_downloader.py
+    python NCBI_downloader.py
 
 To use the command line version:
 
-    python3 NCBI_downloader.py "user@email-address.com" "Query term" "database" outfile.fasta
+    python NCBI_downloader.py "user@email-address.com" "Query term" "database" outfile.fasta
 
 Notes:
 * The program will not overwrite anything in the output file, but rather append sequences to it!
@@ -18,7 +19,7 @@ Notes:
 * *Query term* can take any argument just like in the website search engine (eg. "Lacerta monticola[organism]").
 
 ##Dependencies:
-* pyhton3 (and the standard lib);
+* pyhton (2 or 3) (and the standard lib);
 * [biopython](https://github.com/biopython/biopython);
 * [PyQt4](http://www.riverbankcomputing.com/software/pyqt/intro) for the GUI version;
 
