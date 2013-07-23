@@ -20,7 +20,10 @@
 import sys
 import re
 
-import Entrez
+try:
+    import Entrez3 as Entrez
+except:
+    import Entrez
 from os import remove, stat
 from shutil import move
 
