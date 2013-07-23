@@ -29,8 +29,6 @@ GPLv3
 ##Known limitations:
 * There is **NO** argument checking of any kind. If there is a problem with your arguments, you will see no *hand holding* of any kind.
 Just plain error messages.
-* There is a bug in Biopython 1.61 with urllib when being used with python 3. This bug was corrected with [this](https://github.com/biopython/biopython/commit/f0f4536119947e7d4df838adf6283e545e0dee54) commit. So for now, you must either use biopython from git, patch your own version, or use the python2 version.
-* This bug will cause the downloading of sequences to fail with an urllib error sometimes.
 
 ##Found a bug?
 Or would like a feature added? Or maybe just wanto to drop some feedback?
