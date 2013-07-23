@@ -1,5 +1,6 @@
 # Copyright 1999-2000 by Jeffrey Chang.  All rights reserved.
 # Copyright 2008 by Michiel de Hoon.  All rights reserved.
+# Copyright 2010 by Peter Cock.  All rights reserved.
 # This code is part of the Biopython distribution and governed by its
 # license.  Please see the LICENSE file that should have been included
 # as part of this package.
