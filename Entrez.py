@@ -74,7 +74,7 @@ import time
 import warnings
 import os.path
 
-from Bio._py3k import _binary_to_string_handle, _as_bytes
+#from Bio._py3k import _binary_to_string_handle, _as_bytes
 
 email = None
 tool = "NCBI_Mass_Downloader"
@@ -451,7 +451,7 @@ E-utilities.""", UserWarning)
     try:
         if post:
             #HTTP POST
-            handle = urllib2.urlopen(cgi, data=_as_bytes(options))
+            handle = urllib2.urlopen(cgi, data=options)
         else:
             #HTTP GET
             cgi += "?" + options
@@ -459,7 +459,7 @@ E-utilities.""", UserWarning)
     except urllib2.HTTPError, exception:
         raise exception
 
-    return _binary_to_string_handle(handle)
+    return handle
 
 _open.previous = 0
 

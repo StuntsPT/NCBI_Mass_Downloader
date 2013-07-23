@@ -73,11 +73,59 @@ import urllib.request, urllib.error, urllib.parse
 import time
 import warnings
 import os.path
+import codecs
 
-from Bio._py3k import _binary_to_string_handle, _as_bytes
+#from py3k import _binary_to_string_handle, _as_bytes
+
 
 email = None
 tool = "NCBI_Mass_Downloader"
+
+def _as_bytes(s):
+    """Turn byte string or unicode string into a bytes string."""
+    if isinstance(s, bytes):
+        return s
+    #Assume it is a unicode string
+    #Note ISO-8859-1 aka Latin-1 preserves first 256 chars
+    return codecs.latin_1_encode(s)[0]
+
+def _as_unicode(s):
+    """Turn byte string or unicode string into a unicode string."""
+    if isinstance(s, str):
+        return s
+    #Assume it is a bytes string
+    #Note ISO-8859-1 aka Latin-1 preserves first 256 chars
+    return codecs.latin_1_decode(s)[0]
+
+def _binary_to_string_handle(handle):
+    """Treat a binary (bytes) handle like a text (unicode) handle."""
+    #See also http://bugs.python.org/issue5628
+    #and http://bugs.python.org/issue13541
+    #and http://bugs.python.org/issue13464 which should be fixed in Python 3.3
+    class EvilHandleHack(object):
+        def __init__(self, handle):
+            self._handle = handle
+
+        def read(self, length=None):
+            return _as_unicode(self._handle.read(length))
+
+        def readline(self):
+            return _as_unicode(self._handle.readline())
+
+        def __iter__(self):
+            for line in self._handle:
+                yield _as_unicode(line)
+
+        def close(self):
+            return self._handle.close()
+
+        def seek(self, pos):
+            return self._handle.seek(pos)
+
+        def tell(self):
+            return self._handle.tell()
+
+    return EvilHandleHack(handle)
 
 
 # XXX retmode?
