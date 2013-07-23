@@ -17,10 +17,10 @@ Notes:
 * The program will not overwrite anything in the output file, but rather append sequences to it!
 * For now the *fasta* format is hard-coded in the program, but this may change at a later date.
 * *Query term* can take any argument just like in the website search engine (eg. "Lacerta monticola[organism]").
+* The program uses the Entrez module from [biopython](https://github.com/biopython/biopython). A big Kudos to the authors;
 
 ##Dependencies:
 * pyhton (2 or 3) (and the standard lib);
-* [biopython](https://github.com/biopython/biopython);
 * [PyQt4](http://www.riverbankcomputing.com/software/pyqt/intro) for the GUI version;
 
 ##License:

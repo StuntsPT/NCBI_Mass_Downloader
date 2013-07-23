@@ -20,7 +20,7 @@
 import sys
 import re
 
-from Bio import Entrez
+import Entrez
 from os import remove, stat
 from shutil import move
 
