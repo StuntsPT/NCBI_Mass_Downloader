@@ -80,34 +80,43 @@ class Downloader(object):
             self.ReDownloader(IDs)
         else:
 
-            outfile = open(self.outfile,'a')
-            if self.gui == 1:
-                    self.max_seq.emit(count)
-            if Bsize > count:
-                Bsize = count
-            for start in range(0,count,Bsize):
-                if start + Bsize < count:
-                    end = start + Bsize
-                else:
-                    end = count
-                print("Downloading record %i to %i of %i" %(start+1, end, count))
+            if count == 0 and self.gui == 0:
+                quit("No records found in database!")
+            elif count == 0:
+                self.no_match.emit("No sequences in the database matched your query.")
+                return None
 
+            else:
+                outfile = open(self.outfile,'a')
                 if self.gui == 1:
-                    self.prog_data.emit(end)
+                        self.max_seq.emit(count)
+                if Bsize > count:
+                    Bsize = count
+                for start in range(0,count,Bsize):
+                    if start + Bsize < count:
+                        end = start + Bsize
+                    else:
+                        end = count
+                    print("Downloading record %i to %i of %i" %(start+1, end, count))
 
-                #Make sure that even on server errors the program carries on.
-                #If the servers are dead, well, you were not going anywhere anyway...
-                while True:
-                    try:
-                        fetch_handle = Entrez.efetch(db=self.database, rettype="fasta", retstart=start, retmax=Bsize, webenv=webenv, query_key=query_key)
-                        break
-                    except:
-                        pass
-                data = fetch_handle.read()
-                fetch_handle.close()
-                outfile.write(data)
+                    if self.gui == 1:
+                        self.prog_data.emit(end)
 
-        outfile.close()
+                    #Make sure that even on server errors the program carries on.
+                    #If the servers are dead, well, you were not going anywhere anyway...
+                    while True:
+                        try:
+                            fetch_handle = Entrez.efetch(db=self.database, rettype="fasta", retstart=start, retmax=Bsize, webenv=webenv, query_key=query_key)
+                            break
+                        except:
+                            pass
+                    data = fetch_handle.read()
+                    fetch_handle.close()
+                    outfile.write(data)
+        try:
+            outfile.close()
+        except:
+            pass
         self.ReDownloader(IDs)
 
     def ReDownloader(self, IDs):

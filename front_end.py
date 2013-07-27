@@ -46,7 +46,6 @@ class MainWindow(QtGui.QMainWindow):
 
         #Progress bar
         self.progbar = QtGui.QProgressBar(self)
-        #self.pbar.setValue(self."X") Reminder!
 
         #Status bar
         self.statusBar().showMessage('Ready')
@@ -172,37 +171,43 @@ class MainWindow(QtGui.QMainWindow):
         self.save_file_line.setText(self.savefile)
 
     def runOnClick(self):
-        #str() method used for python2 compatibility (python2 does not handle QString natively - just str)
+        #str() method used for python2 compatibility (python2 does not handle QString natively)
         self.email_address = str(self.email_line.displayText())
         self.database_to_search = str(self.databases.currentText())
         self.search_term = str(self.search_query.displayText())
         self.file_to_handle = str(self.save_file_line.displayText())
 
+
         if self.sanityCheck() == 1:
 
+            self.message = ""
             Get_data = DownloaderGui(self.email_address, self.database_to_search, self.search_term, self.file_to_handle, 1)
             Get_data.max_seq.connect(self.progbar.setMaximum)
             Get_data.prog_data.connect(self.progbar.setValue)
+            Get_data.no_match.connect(lambda msg : setattr(self, 'message', msg))
             Get_data.runEverything()
+            if self.message == "":
+                self.message = "Download finished sucessfully!"
 
-
-            if self.DlFinished() == 2097152:
+            if self.DlFinished(self.message) == 2097152:
                 self.close()
             else:
                 self.cleanForms()
                 self.statusChange()
 
+
     def cleanForms(self):
+        #Clear forms for making another download
         self.search_query.setText("")
         self.save_file_line.setText("")
         self.progbar.setValue(0)
-        #TODO: Reset progress bar!
 
-    def DlFinished(self):
+
+    def DlFinished(self, message):
         #Create message box for finished download
         self.question = QtGui.QMessageBox(self)
         self.question.setIcon(QtGui.QMessageBox.Question)
-        self.question.setText("Download finished sucessfully!")
+        self.question.setText(message)
         self.question.setInformativeText("Would you like to reset the froms and make another download or close the program?")
         self.question.setStandardButtons(QtGui.QMessageBox.Reset | QtGui.QMessageBox.Close)
 
@@ -212,7 +217,7 @@ class MainWindow(QtGui.QMainWindow):
 
     def sanityCheck(self):
         #Check if the variables to send to the back end make sense
-        if re.match("[a-zA-Z0-9_.]*@\w*.\w*$", self.email_address) == None:
+        if re.match("[a-zA-Z0-9_.]*@\w*\..*$", self.email_address) == None:
             self.fail = QtGui.QMessageBox.warning(self, "Problem with email address", "Email address does not seem valid. Is there a typo? Please correct it.", QtGui.QMessageBox.Ok)
             return 0
         elif len(self.search_term) < 3:
@@ -224,10 +229,19 @@ class MainWindow(QtGui.QMainWindow):
         else:
             return 1
 
-class DownloaderGui(Downloader, QtCore.QThread):
+    @QtCore.pyqtSlot(str)
+    def communicator(self, msg):
+        #Get a message from the back end.
+        print(msg)
+        return msg
+
+
+
+class DownloaderGui(Downloader, QtCore.QThread, QtCore.QObject):
     #Just add PyQt magic to Downloader() and create emmiters in constructor.
     prog_data = QtCore.pyqtSignal(int)
     max_seq = QtCore.pyqtSignal(int)
+    no_match = QtCore.pyqtSignal(str)
 
 
 def main():
