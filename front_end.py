@@ -180,14 +180,13 @@ class MainWindow(QtGui.QMainWindow):
 
         if self.sanityCheck() == 1:
 
-            self.message = ""
+            self.message = "Download finished sucessfully!"
             Get_data = DownloaderGui(self.email_address, self.database_to_search, self.search_term, self.file_to_handle, 1)
             Get_data.max_seq.connect(self.progbar.setMaximum)
             Get_data.prog_data.connect(self.progbar.setValue)
             Get_data.no_match.connect(lambda msg : setattr(self, 'message', msg))
             Get_data.runEverything()
-            if self.message == "":
-                self.message = "Download finished sucessfully!"
+
 
             if self.DlFinished(self.message) == 2097152:
                 self.close()
@@ -195,13 +194,11 @@ class MainWindow(QtGui.QMainWindow):
                 self.cleanForms()
                 self.statusChange()
 
-
     def cleanForms(self):
         #Clear forms for making another download
         self.search_query.setText("")
         self.save_file_line.setText("")
         self.progbar.setValue(0)
-
 
     def DlFinished(self, message):
         #Create message box for finished download
@@ -228,13 +225,6 @@ class MainWindow(QtGui.QMainWindow):
             return 0
         else:
             return 1
-
-    @QtCore.pyqtSlot(str)
-    def communicator(self, msg):
-        #Get a message from the back end.
-        print(msg)
-        return msg
-
 
 
 class DownloaderGui(Downloader, QtCore.QThread, QtCore.QObject):
