@@ -205,7 +205,7 @@ class MainWindow(QtGui.QMainWindow):
         self.question = QtGui.QMessageBox(self)
         self.question.setIcon(QtGui.QMessageBox.Question)
         self.question.setText(message)
-        self.question.setInformativeText("Would you like to reset the froms and make another download or close the program?")
+        self.question.setInformativeText("Would you like to reset the forms and make another download or close the program?")
         self.question.setStandardButtons(QtGui.QMessageBox.Reset | QtGui.QMessageBox.Close)
 
         reply = self.question.exec_()
