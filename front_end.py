@@ -213,7 +213,7 @@ class MainWindow(QtGui.QMainWindow):
         return reply
 
     def sanityCheck(self):
-        #Check if the variables to send to the back end make sense
+        #Check if the variables to be sent to the back end make sense
         if re.match("[a-zA-Z0-9_.]*@\w*\..*$", self.email_address) == None:
             self.fail = QtGui.QMessageBox.warning(self, "Problem with email address", "Email address does not seem valid. Is there a typo? Please correct it.", QtGui.QMessageBox.Ok)
             return 0
@@ -228,7 +228,7 @@ class MainWindow(QtGui.QMainWindow):
 
 
 class DownloaderGui(Downloader, QtCore.QThread, QtCore.QObject):
-    #Just add PyQt magic to Downloader() and create emmiters in constructor.
+    #Just add PyQt 'magic' to Downloader() and create emmiters in constructor.
     prog_data = QtCore.pyqtSignal(int)
     max_seq = QtCore.pyqtSignal(int)
     no_match = QtCore.pyqtSignal(str)
