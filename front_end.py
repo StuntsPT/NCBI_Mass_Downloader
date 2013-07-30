@@ -52,7 +52,7 @@ class MainWindow(QtGui.QMainWindow):
 
         #Title lable
         self.title = QtGui.QLabel(self)
-        self.title.setText("NCBI mass sequence downloader")
+        self.title.setText("NCBI Mass Sequence Downloader")
         self.title.setFont(QtGui.QFont("Sans", 16, QtGui.QFont.Bold, True))
 
         #Email line edit and respective label
