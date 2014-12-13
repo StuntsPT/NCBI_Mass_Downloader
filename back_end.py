@@ -149,7 +149,7 @@ class Downloader(object):
             if lines.startswith(">"):
                 ID = re.search("gi\|.*?\|",lines).group(0)[3:-1]
                 verified_IDs.add(ID)
-                new_file.write("\n" + lines) #TODO: remove first empty line from file
+                new_file.write(lines)
             elif lines.strip().startswith("<") or lines.startswith("\n"):
                 pass
             else:
