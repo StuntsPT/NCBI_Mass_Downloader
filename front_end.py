@@ -19,10 +19,11 @@ import sys
 import re
 import os
 
-from PyQt4 import QtGui, QtCore
+from PyQt5 import QtGui, QtCore, QtWidgets
+
 from back_end import Downloader
 
-class MainWindow(QtGui.QMainWindow):
+class MainWindow(QtWidgets.QMainWindow):
 
     def __init__(self):
         super(MainWindow, self).__init__()
@@ -32,37 +33,37 @@ class MainWindow(QtGui.QMainWindow):
     def initUI(self):
         ##Create widgets
         #Download button
-        dlbtn = QtGui.QPushButton("Download!", self)
+        dlbtn = QtWidgets.QPushButton("Download!", self)
         dlbtn.setToolTip('Click to start downloading...')
         dlbtn.clicked.connect(self.statusChange)
         dlbtn.clicked.connect(self.runOnClick)
         dlbtn.resize(dlbtn.sizeHint())
 
         #Quit button
-        qbtn = QtGui.QPushButton("Quit", self)
+        qbtn = QtWidgets.QPushButton("Quit", self)
         qbtn.setToolTip('Click exit the program...')
         qbtn.clicked.connect(QtCore.QCoreApplication.instance().quit)
         qbtn.resize(qbtn.sizeHint())
 
         #Progress bar
-        self.progbar = QtGui.QProgressBar(self)
+        self.progbar = QtWidgets.QProgressBar(self)
 
         #Status bar
         self.statusBar().showMessage('Ready')
 
         #Title lable
-        self.title = QtGui.QLabel(self)
+        self.title = QtWidgets.QLabel(self)
         self.title.setText("NCBI Mass Sequence Downloader")
         self.title.setFont(QtGui.QFont("Sans", 16, QtGui.QFont.Bold, True))
 
         #Email line edit and respective label
-        self.email_line = QtGui.QLineEdit(self)
+        self.email_line = QtWidgets.QLineEdit(self)
         self.email_line.setFixedWidth(220)
-        self.email_label = QtGui.QLabel(self)
+        self.email_label = QtWidgets.QLabel(self)
         self.email_label.setText("Email address:")
 
         #Databases to search and respective label
-        self.databases = QtGui.QComboBox(self)
+        self.databases = QtWidgets.QComboBox(self)
         self.databases.addItem("nucleotide")
         self.databases.addItem("nuccore")
         self.databases.addItem("nucgss")
@@ -70,23 +71,23 @@ class MainWindow(QtGui.QMainWindow):
         self.databases.addItem("protein")
         self.databases.addItem("genome")
         self.databases.addItem("popset")
-        self.databases_label = QtGui.QLabel(self)
+        self.databases_label = QtWidgets.QLabel(self)
         self.databases_label.setText("Database to search:")
 
         #Search query line and respective label
-        self.search_query = QtGui.QLineEdit(self)
+        self.search_query = QtWidgets.QLineEdit(self)
         self.search_query.setFixedWidth(300)
-        self.search_query_label = QtGui.QLabel(self)
+        self.search_query_label = QtWidgets.QLabel(self)
         self.search_query_label.setText("Search Query:")
 
         #File management
-        self.save_file_label = QtGui.QLabel(self)
+        self.save_file_label = QtWidgets.QLabel(self)
         self.save_file_label.setText("File Location:")
 
-        self.save_file_line = QtGui.QLineEdit(self)
+        self.save_file_line = QtWidgets.QLineEdit(self)
         self.save_file_line.setFixedWidth(300)
 
-        self.save_file_button = QtGui.QPushButton("Find...", self)
+        self.save_file_button = QtWidgets.QPushButton("Find...", self)
         self.save_file_button.resize(dlbtn.sizeHint())
         self.save_file_button.setToolTip('Click to select file location...')
         self.save_file_button.clicked.connect(self.fileHandle)
@@ -94,28 +95,28 @@ class MainWindow(QtGui.QMainWindow):
         #self.savefile = QtGui.QFileDialog.getSaveFileName(self, "Save to file...", "", ".fasta")
 
         #Container widget
-        self.main_widget = QtGui.QWidget(self)
+        self.main_widget = QtWidgets.QWidget(self)
 
         ##Set layout
         #Containers
-        self.main_layout = QtGui.QVBoxLayout(self.main_widget)
-        self.main_layout.sizeConstraint = QtGui.QLayout.SetDefaultConstraint
+        self.main_layout = QtWidgets.QVBoxLayout(self.main_widget)
+        self.main_layout.sizeConstraint = QtWidgets.QLayout.SetDefaultConstraint
 
         self.main_widget.setLayout(self.main_layout)
         self.setCentralWidget(self.main_widget)
 
         #Box for progress bar
-        self.progressBox = QtGui.QHBoxLayout()
+        self.progressBox = QtWidgets.QHBoxLayout()
         self.progressBox.addWidget(self.progbar)
 
         #Box for search query
-        self.queryBox = QtGui.QHBoxLayout()
+        self.queryBox = QtWidgets.QHBoxLayout()
         self.queryBox.addWidget(self.search_query_label)
         self.queryBox.addWidget(self.search_query)
         self.queryBox.addStretch(1)
 
         #Box for email and database
-        self.email_database_box = QtGui.QHBoxLayout()
+        self.email_database_box = QtWidgets.QHBoxLayout()
         self.email_database_box.addWidget(self.email_label)
         self.email_database_box.addWidget(self.email_line)
 
@@ -125,19 +126,19 @@ class MainWindow(QtGui.QMainWindow):
         self.email_database_box.addWidget(self.databases)
 
         #Box for file management
-        self.file_box = QtGui.QHBoxLayout()
+        self.file_box = QtWidgets.QHBoxLayout()
         self.file_box.addWidget(self.save_file_label)
         self.file_box.addWidget(self.save_file_line)
         self.file_box.addWidget(self.save_file_button)
 
         #Box for Title
-        self.titlebox = QtGui.QHBoxLayout()
+        self.titlebox = QtWidgets.QHBoxLayout()
         self.titlebox.addStretch(1)
         self.titlebox.addWidget(self.title)
         self.titlebox.addStretch(1)
 
         #Box for bottom buttons
-        self.bottomBox = QtGui.QHBoxLayout()
+        self.bottomBox = QtWidgets.QHBoxLayout()
         self.bottomBox.addStretch(1)
         self.bottomBox.addWidget(dlbtn)
         self.bottomBox.addWidget(qbtn)
@@ -167,7 +168,7 @@ class MainWindow(QtGui.QMainWindow):
             self.statusBar().showMessage("Ready")
 
     def fileHandle(self):
-        self.savefile = QtGui.QFileDialog.getSaveFileName(self, "Save to file...", "", "Fasta Files (*.fasta);;All Files (*)")
+        self.savefile = QtWidgets.QFileDialog.getSaveFileName(self, "Save to file...", "", "Fasta Files (*.fasta);;All Files (*)")[0]
         self.save_file_line.setText(self.savefile)
 
     def runOnClick(self):
@@ -202,11 +203,11 @@ class MainWindow(QtGui.QMainWindow):
 
     def DlFinished(self, message):
         #Create message box for finished download
-        self.question = QtGui.QMessageBox(self)
-        self.question.setIcon(QtGui.QMessageBox.Question)
+        self.question = QtWidgets.QMessageBox(self)
+        self.question.setIcon(QtWidgets.QMessageBox.Question)
         self.question.setText(message)
         self.question.setInformativeText("Would you like to reset the forms and make another download or close the program?")
-        self.question.setStandardButtons(QtGui.QMessageBox.Reset | QtGui.QMessageBox.Close)
+        self.question.setStandardButtons(QtWidgets.QMessageBox.Reset | QtWidgets.QMessageBox.Close)
 
         reply = self.question.exec_()
 
@@ -215,13 +216,13 @@ class MainWindow(QtGui.QMainWindow):
     def sanityCheck(self):
         #Check if the variables to be sent to the back end make sense
         if re.match("[a-zA-Z0-9_.]*@\w*\..*$", self.email_address) == None:
-            self.fail = QtGui.QMessageBox.warning(self, "Problem with email address", "Email address does not seem valid. Is there a typo? Please correct it.", QtGui.QMessageBox.Ok)
+            self.fail = QtWidgets.QMessageBox.warning(self, "Problem with email address", "Email address does not seem valid. Is there a typo? Please correct it.", QtWidgets.QMessageBox.Ok)
             return 0
         elif len(self.search_term) < 3:
-            self.fail = QtGui.QMessageBox.warning(self, "Problem with search query", "Your search query is too short. It should have at least 3 characters.", QtGui.QMessageBox.Ok)
+            self.fail = QtWidgets.QMessageBox.warning(self, "Problem with search query", "Your search query is too short. It should have at least 3 characters.", QtWidgets.QMessageBox.Ok)
             return 0
         elif (os.path.exists(os.path.dirname(self.file_to_handle)) == False) or (os.access(os.path.dirname(self.file_to_handle), os.W_OK) == False):
-            self.fail = QtGui.QMessageBox.warning(self, "Problem with path or permissions", "The path leading to your output file does not seem to exist or you don't have write permissions for it. Please correct it and try again.", QtGui.QMessageBox.Ok)
+            self.fail = QtWidgets.QMessageBox.warning(self, "Problem with path or permissions", "The path leading to your output file does not seem to exist or you don't have write permissions for it. Please correct it and try again.", QtWidgets.QMessageBox.Ok)
             return 0
         else:
             return 1
@@ -236,7 +237,7 @@ class DownloaderGui(Downloader, QtCore.QThread, QtCore.QObject):
 
 def main():
 
-    app = QtGui.QApplication(sys.argv)
+    app = QtWidgets.QApplication(sys.argv)
     ex = MainWindow()
     sys.exit(app.exec_())
 
