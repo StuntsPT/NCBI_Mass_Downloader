@@ -14,22 +14,21 @@ To use the command line version:
     python NCBI_downloader.py "user@email-address.com" "Query term" "database" outfile.fasta
 
 Notes:
-* The program will not overwrite anything in the output file, but rather append sequences to it!
-* For now the *fasta* format is hard-coded in the program, but this may change at a later date.
-* *Query term* can take any argument just like in the website search engine (eg. "Lacerta monticola[organism]").
-* The program uses the Entrez module from [biopython](https://github.com/biopython/biopython). A big Kudos to the authors;
+* The program will not overwrite anything in the output file, but rather append sequences to it;
+* For now the *fasta* format is hard-coded in the program, but this may change should there be demand for it;
+* *Query term* can take any argument just like in the website search engine (eg. "Lacerta monticola[organism]");
+* The program uses the Entrez module from [biopython](https://github.com/biopython/biopython). A big Kudos to the authors.
 
 ##Dependencies:
 * pyhton (2 or 3) (and the standard lib);
-* [PyQt4](http://www.riverbankcomputing.com/software/pyqt/intro) for the GUI version;
+* [PyQt5](http://www.riverbankcomputing.com/software/pyqt/intro) for the GUI version.
 
 ##License:
 GPLv3
 
 ##Known limitations:
-* There is **NO** argument checking of any kind. If there is a problem with your arguments, you will see no *hand holding* of any kind.
-Just plain error messages.
+* There is **NO** argument checking of any kind. If there is a problem with your arguments, you will see no *hand holding* of any kind, just plain python error messages.
 
 ##Found a bug?
-Or would like a feature added? Or maybe just wanto to drop some feedback?
-Just open an issue on github!
+Or would like a feature added? Or maybe drop some feedback?
+Just open an issue on github.
