@@ -1,3 +1,4 @@
 *.swp
 testfiles/*
 *.pyc
+Binaries/*
