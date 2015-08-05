@@ -4,6 +4,9 @@
 This program will download sequences *en masse* from several NCBI databases (at the user's chioce).
 It will run on both python2 and python3!
 
+##Installation
+Not required. Just clone the repository or uncompress one of the releases and run from there.
+
 ##Usage:
 To use the GUI version:
 
