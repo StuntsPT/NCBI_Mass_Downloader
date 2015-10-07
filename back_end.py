@@ -114,7 +114,7 @@ class Downloader(object):
                         self.prog_data.emit(end)
 
                     # Make sure that even on server errors the program carries on.
-                    #If the servers are dead, well, you were not going anywhere anyway...
+                    # If the servers are dead, well, you were not going anywhere anyway...
                     while True:
                         try:
                             fetch_handle = Entrez.efetch(db=self.database, rettype="fasta", retstart=start, retmax=Bsize, webenv=webenv, query_key=query_key)
