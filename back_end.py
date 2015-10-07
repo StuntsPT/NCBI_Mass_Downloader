@@ -15,7 +15,7 @@
 #  MA 02110-1301, USA.
 #
 
-#Usage: back_end.py "user@email-address.com" "Query term" "database" outfile.fasta
+# Usage: back_end.py "user@email-address.com" "Query term" "database" outfile.fasta
 
 import sys
 import re
@@ -24,27 +24,35 @@ import Entrez
 from os import remove, stat
 from shutil import move
 
+
 class Downloader(object):
     def __init__(self, email, database, term, outfile, gui):
         self.email = email
         self.database = database
-        self. term = term
+        self.term = term
         self.outfile = outfile
         self.gui = gui
         super(Downloader, self).__init__()
 
+
     def NCBI_search(self):
-        #Submit search to NCBI and return the records
-        handle = Entrez.esearch(db=self.database,term=self.term,usehistory="y",retmax=10000000)
+        """
+        Submit search to NCBI and return the records.
+        """
+        handle = Entrez.esearch(db=self.database, term=self.term,
+                                usehistory="y", retmax=10000000)
         record = Entrez.read(handle)
         handle.close()
 
         return record
 
+
     def NCBI_post(self, IDs):
-        #Submit id_list to NCBI via epost and return the records
+        """
+        Submit id_list to NCBI via epost and return the records
+        """
         IDs_string = ",".join(IDs)
-        handle = Entrez.epost(self.database,id=IDs_string,retmax=10000000)
+        handle = Entrez.epost(self.database, id=IDs_string, retmax=10000000)
         record = Entrez.read(handle)
         handle.close()
 
@@ -54,8 +62,11 @@ class Downloader(object):
 
         return count, IDs, webenv, query_key
 
+
     def Record_processor(self,record):
-        #Processes the record into sparate usefull information
+        """
+        Processes the record into sparate usefull information
+        """
         count = int(record["Count"])
         IDs = record["IdList"]
         webenv = record["WebEnv"]
@@ -65,8 +76,11 @@ class Downloader(object):
 
         return count, IDs, webenv, query_key
 
+
     def NCBI_history_fetch(self, count, IDs, webenv, query_key, Bsize, Run):
-        #Fetches results from NCBI using history
+        """
+        Fetches results from NCBI using history.
+        """
         try:
             a = open(self.outfile,'r')
             a.close()
@@ -89,7 +103,7 @@ class Downloader(object):
                         self.max_seq.emit(count)
                 if Bsize > count:
                     Bsize = count
-                for start in range(0,count,Bsize):
+                for start in range(0, count, Bsize):
                     if start + Bsize < count:
                         end = start + Bsize
                     else:
@@ -99,7 +113,7 @@ class Downloader(object):
                     if self.gui == 1:
                         self.prog_data.emit(end)
 
-                    #Make sure that even on server errors the program carries on.
+                    # Make sure that even on server errors the program carries on.
                     #If the servers are dead, well, you were not going anywhere anyway...
                     while True:
                         try:
@@ -116,8 +130,11 @@ class Downloader(object):
             pass
         self.ReDownloader(IDs)
 
+
     def ReDownloader(self, IDs):
-        #Check for missing sequences:
+        """
+        Checks for missing sequences.
+        """
         print("Checking for sequences that did not download... Please wait.")
         ver_IDs = self.Error_finder()
         missing_IDs = set()
@@ -134,8 +151,11 @@ class Downloader(object):
             count, IDs, webenv, query_key = self.NCBI_post(IDs)
             self.NCBI_history_fetch(count, IDs, webenv, query_key, 1000, 2)
 
+
     def Error_finder(self):
-        #Looks for errors in the output fasta and retruns a list of necessary retries
+        """
+        Looks for errors in the output fasta and retruns a list of necessary retries.
+        """
         temp_file = self.outfile + ".tmp"
         move(self.outfile, temp_file)
         original_file = open(temp_file,'r')
@@ -158,8 +178,9 @@ class Downloader(object):
 
         return verified_IDs
 
+
     def runEverything(self):
-        #Run the functions in order
+        # Run the functions in order
         batch_size = 1000
         Entrez.email = self.email
 
