@@ -13,71 +13,82 @@ A list of the Entrez utilities is available at:
 http://www.ncbi.nlm.nih.gov/entrez/utils/utils_index.html
 
 Variables:
-email        Set the Entrez email parameter (default is not set).
-tool         Set the Entrez tool parameter (default is  biopython).
+
+    - email        Set the Entrez email parameter (default is not set).
+    - tool         Set the Entrez tool parameter (default is  biopython).
 
 Functions:
-efetch       Retrieves records in the requested format from a list of one or
-             more primary IDs or from the user's environment
-epost        Posts a file containing a list of primary IDs for future use in
-             the user's environment to use with subsequent search strategies
-esearch      Searches and retrieves primary IDs (for use in EFetch, ELink,
-             and ESummary) and term translations and optionally retains
-             results for future use in the user's environment.
-elink        Checks for the existence of an external or Related Articles link
-             from a list of one or more primary IDs.  Retrieves primary IDs
-             and relevancy scores for links to Entrez databases or Related
-             Articles;  creates a hyperlink to the primary LinkOut provider
-             for a specific ID and database, or lists LinkOut URLs
-             and Attributes for multiple IDs.
-einfo        Provides field index term counts, last update, and available
-             links for each database.
-esummary     Retrieves document summaries from a list of primary IDs or from
-             the user's environment.
-egquery      Provides Entrez database counts in XML for a single search
-             using Global Query.
-espell       Retrieves spelling suggestions.
 
-read         Parses the XML results returned by any of the above functions.
-             Typical usage is:
+    - efetch       Retrieves records in the requested format from a list of one or
+      more primary IDs or from the user's environment
+    - epost        Posts a file containing a list of primary IDs for future use in
+      the user's environment to use with subsequent search strategies
+    - esearch      Searches and retrieves primary IDs (for use in EFetch, ELink,
+      and ESummary) and term translations and optionally retains
+      results for future use in the user's environment.
+    - elink        Checks for the existence of an external or Related Articles link
+      from a list of one or more primary IDs.  Retrieves primary IDs
+      and relevancy scores for links to Entrez databases or Related
+      Articles;  creates a hyperlink to the primary LinkOut provider
+      for a specific ID and database, or lists LinkOut URLs
+      and Attributes for multiple IDs.
+    - einfo        Provides field index term counts, last update, and available
+      links for each database.
+    - esummary     Retrieves document summaries from a list of primary IDs or from
+      the user's environment.
+    - egquery      Provides Entrez database counts in XML for a single search
+      using Global Query.
+    - espell       Retrieves spelling suggestions.
+    - ecitmatch    Retrieves PubMed IDs (PMIDs) that correspond to a set of
+      input citation strings.
 
-             >>> from Bio import Entrez
-             >>> Entrez.email = "Your.Name.Here@example.org"
-             >>> handle = Entrez.einfo() # or esearch, efetch, ...
-             >>> record = Entrez.read(handle)
-             >>> handle.close()
+    - read         Parses the XML results returned by any of the above functions.
+      Typical usage is:
 
-             where record is now a Python dictionary or list.
+          >>> from Bio import Entrez
+          >>> Entrez.email = "Your.Name.Here@example.org"
+          >>> handle = Entrez.einfo() # or esearch, efetch, ...
+          >>> record = Entrez.read(handle)
+          >>> handle.close()
 
-parse        Parses the XML results returned by those of the above functions
-             which can return multiple records - such as efetch, esummary
-             and elink. Typical usage is:
+       where record is now a Python dictionary or list.
 
-             >>> handle = Entrez.efetch("pubmed", id="19304878,14630660", retmode="xml")
-             >>> records = Entrez.parse(handle)
-             >>> for record in records:
-             ...     # each record is a Python dictionary or list.
-             ...     print record['MedlineCitation']['Article']['ArticleTitle']
-             Biopython: freely available Python tools for computational molecular biology and bioinformatics.
-             PDB file parser and structure class implemented in Python.
-             >>> handle.close()
+    - parse        Parses the XML results returned by those of the above functions
+      which can return multiple records - such as efetch, esummary
+      and elink. Typical usage is:
 
-             This function is appropriate only if the XML file contains
-             multiple records, and is particular useful for large files.
+          >>> handle = Entrez.efetch("pubmed", id="19304878,14630660", retmode="xml")
+          >>> records = Entrez.parse(handle)
+          >>> for record in records:
+          ...     # each record is a Python dictionary or list.
+          ...     print(record['MedlineCitation']['Article']['ArticleTitle'])
+          Biopython: freely available Python tools for computational molecular biology and bioinformatics.
+          PDB file parser and structure class implemented in Python.
+          >>> handle.close()
 
-_open        Internally used function.
+      This function is appropriate only if the XML file contains
+      multiple records, and is particular useful for large files.
+
+    - _open        Internally used function.
 
 """
-import urllib
-import urllib2
+from __future__ import print_function
+
 import time
 import warnings
 import os.path
 
-#from Bio._py3k import _binary_to_string_handle, _as_bytes
+# Importing these functions with leading underscore as not intended for reuse
+from Bio._py3k import urlopen as _urlopen
+from Bio._py3k import urlencode as _urlencode
+from Bio._py3k import HTTPError as _HTTPError
+
+from Bio._py3k import _binary_to_string_handle, _as_bytes
+
+__docformat__ = "restructuredtext en"
 
 email = None
-tool = "NCBI_Mass_Downloader"
+tool = "biopython"
 
 
 # XXX retmode?
@@ -118,11 +129,11 @@ def efetch(db, **keywords):
     >>> from Bio import Entrez
     >>> Entrez.email = "Your.Name.Here@example.org"
     >>> handle = Entrez.efetch(db="nucleotide", id="57240072", rettype="gb", retmode="text")
-    >>> print handle.readline().strip()
+    >>> print(handle.readline().strip())
     LOCUS       AY851612                 892 bp    DNA     linear   PLN 10-APR-2007
     >>> handle.close()
 
-    Warning: The NCBI changed the default retmode in Feb 2012, so many
+    **Warning:** The NCBI changed the default retmode in Feb 2012, so many
     databases which previously returned text output now give XML.
     """
     cgi = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi'
@@ -205,7 +216,7 @@ def elink(**keywds):
     >>> handle = Entrez.elink(dbfrom="pubmed", id=pmid, linkname="pubmed_pubmed")
     >>> record = Entrez.read(handle)
     >>> handle.close()
-    >>> print record[0]["LinkSetDb"][0]["LinkName"]
+    >>> print(record[0]["LinkSetDb"][0]["LinkName"])
     pubmed_pubmed
     >>> linked = [link["Id"] for link in record[0]["LinkSetDb"][0]["Link"]]
     >>> "17121776" in linked
@@ -267,9 +278,9 @@ def esummary(**keywds):
     >>> handle = Entrez.esummary(db="journals", id="30367")
     >>> record = Entrez.read(handle)
     >>> handle.close()
-    >>> print record[0]["Id"]
+    >>> print(record[0]["Id"])
     30367
-    >>> print record[0]["Title"]
+    >>> print(record[0]["Title"])
     Computational biology and chemistry
 
     """
@@ -303,7 +314,7 @@ def egquery(**keywds):
     >>> handle.close()
     >>> for row in record["eGQueryResult"]:
     ...     if "pmc" in row["DbName"]:
-    ...         print row["Count"] > 60
+    ...         print(row["Count"] > 60)
     True
 
     """
@@ -330,9 +341,9 @@ def espell(**keywds):
     >>> from Bio import Entrez
     >>> Entrez.email = "Your.Name.Here@example.org"
     >>> record = Entrez.read(Entrez.espell(term="biopythooon"))
-    >>> print record["Query"]
+    >>> print(record["Query"])
     biopythooon
-    >>> print record["CorrectedQuery"]
+    >>> print(record["CorrectedQuery"])
     biopython
 
     """
@@ -340,6 +351,49 @@ def espell(**keywds):
     variables = {}
     variables.update(keywds)
     return _open(cgi, variables)
+
+
+def ecitmatch(**keywds):
+    """ECitMatch retrieves PMIDs-Citation linking
+
+    ECitMatch retrieves PubMed IDs (PMIDs) that correspond to a set of input citation strings.
+
+    See the online documentation for an explanation of the parameters:
+    http://www.ncbi.nlm.nih.gov/books/NBK25499/#chapter4.ECitMatch
+
+    Return a handle to the results, by default in plain text
+
+    Raises an IOError exception if there's a network error.
+
+    Short example:
+
+    >>> from Bio import Entrez
+    >>> Entrez.email = "Your.Name.Here@example.org"
+    >>> citation_1 = {
+    ...    "journal_title": "proc natl acad sci u s a",
+    ...    "year": "1991", "volume": "88", "first_page": "3248",
+    ...    "author_name": "mann bj", "key": "citation_1"}
+    >>> record = Entrez.ecitmatch(db="pubmed", bdata=[citation_1])
+    >>> print(record["Query"])
+    """
+    cgi = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/ecitmatch.cgi'
+    # XML is the only supported value, and it actually returns TXT.
+    variables = {'retmode': 'xml'}
+    citation_keys = ('journal_title', 'year', 'volume', 'first_page', 'author_name', 'key')
+
+    # Accept pre-formatted strings
+    if isinstance(keywds['bdata'], str):
+        variables.update(keywds)
+    else:
+        # Alternatively accept a nicer interface
+        variables['db'] = keywds['db']
+        bdata = []
+        for citation in keywds['bdata']:
+            formatted_citation = '|'.join([citation.get(key, "") for key in citation_keys])
+            bdata.append(formatted_citation)
+        variables['bdata'] = '\r'.join(bdata)
+
+    return _open(cgi, variables, ecitmatch=True)
 
 
 def read(handle, validate=True):
@@ -400,7 +454,7 @@ def parse(handle, validate=True):
     return records
 
 
-def _open(cgi, params={}, post=False):
+def _open(cgi, params=None, post=False, ecitmatch=False):
     """Helper function to build the URL and open a handle to it (PRIVATE).
 
     Open a handle to Entrez.  cgi is the URL for the cgi script to access.
@@ -410,6 +464,8 @@ def _open(cgi, params={}, post=False):
     This function also enforces the "up to three queries per second rule"
     to avoid abusing the NCBI servers.
     """
+    if params is None:
+        params = {}
     # NCBI requirement: At most three queries per second.
     # Equivalently, at least a third of second between queries
     delay = 0.333333334
@@ -421,55 +477,57 @@ def _open(cgi, params={}, post=False):
     else:
         _open.previous = current
     # Remove None values from the parameters
-    for key, value in params.items():
+    for key, value in list(params.items()):
         if value is None:
             del params[key]
     # Tell Entrez that we are using Biopython (or whatever the user has
     # specified explicitly in the parameters or by changing the default)
-    if not "tool" in params:
+    if "tool" not in params:
         params["tool"] = tool
     # Tell Entrez who we are
-    if not "email" in params:
+    if "email" not in params:
         if email is not None:
             params["email"] = email
         else:
             warnings.warn("""
 Email address is not specified.
 
-To make use of NCBI's E-utilities, NCBI strongly recommends you to specify
-your email address with each request. From June 1, 2010, this will be
-mandatory. As an example, if your email address is A.N.Other@example.com, you
-can specify it as follows:
+To make use of NCBI's E-utilities, NCBI requires you to specify your
+email address with each request.  As an example, if your email address
+is A.N.Other@example.com, you can specify it as follows:
    from Bio import Entrez
    Entrez.email = 'A.N.Other@example.com'
 In case of excessive usage of the E-utilities, NCBI will attempt to contact
 a user at the email address provided before blocking access to the
 E-utilities.""", UserWarning)
     # Open a handle to Entrez.
-    options = urllib.urlencode(params, doseq=True)
-    #print cgi + "?" + options
+    options = _urlencode(params, doseq=True)
+    # _urlencode encodes pipes, which NCBI expects in ECitMatch
+    if ecitmatch:
+        options = options.replace('%7C', '|')
+    # print cgi + "?" + options
     try:
         if post:
-            #HTTP POST
-            handle = urllib2.urlopen(cgi, data=options)
+            # HTTP POST
+            handle = _urlopen(cgi, data=_as_bytes(options))
         else:
-            #HTTP GET
+            # HTTP GET
             cgi += "?" + options
-            handle = urllib2.urlopen(cgi)
-    except urllib2.HTTPError, exception:
+            handle = _urlopen(cgi)
+    except _HTTPError as exception:
         raise exception
 
-    return handle
+    return _binary_to_string_handle(handle)
 
 _open.previous = 0
 
 
 def _test():
     """Run the module's doctests (PRIVATE)."""
-    print "Running doctests..."
+    print("Running doctests...")
     import doctest
     doctest.testmod()
-    print "Done"
+    print("Done")
 
 if __name__ == "__main__":
     _test()

@@ -1,45 +1,53 @@
-# Copyright 2008 by Michiel de Hoon.  All rights reserved.
+# Copyright 2008-2014 by Michiel de Hoon.  All rights reserved.
+# Revisions copyright 2008-2015 by Peter Cock. All rights reserved.
 # This code is part of the Biopython distribution and governed by its
 # license.  Please see the LICENSE file that should have been included
 # as part of this package.
 
-"""Parser for XML results returned by NCBI's Entrez Utilities. This
-parser is used by the read() function in Bio.Entrez, and is not intended
-be used directly.
+"""Parser for XML results returned by NCBI's Entrez Utilities.
+
+This parser is used by the read() function in Bio.Entrez, and is not
+intended be used directly.
+
+The question is how to represent an XML file as Python objects. Some
+XML files returned by NCBI look like lists, others look like dictionaries,
+and others look like a mix of lists and dictionaries.
+
+My approach is to classify each possible element in the XML as a plain
+string, an integer, a list, a dictionary, or a structure. The latter is a
+dictionary where the same key can occur multiple times; in Python, it is
+represented as a dictionary where that key occurs once, pointing to a list
+of values found in the XML file.
+
+The parser then goes through the XML and creates the appropriate Python
+object for each element. The different levels encountered in the XML are
+preserved on the Python side. So a subelement of a subelement of an element
+is a value in a dictionary that is stored in a list which is a value in
+some other dictionary (or a value in a list which itself belongs to a list
+which is a value in a dictionary, and so on). Attributes encountered in
+the XML are stored as a dictionary in a member .attributes of each element,
+and the tag name is saved in a member .tag.
+
+To decide which kind of Python object corresponds to each element in the
+XML, the parser analyzes the DTD referred at the top of (almost) every
+XML file returned by the Entrez Utilities. This is preferred over a hand-
+written solution, since the number of DTDs is rather large and their
+contents may change over time. About half the code in this parser deals
+wih parsing the DTD, and the other half with the XML itself.
 """
-
-# The question is how to represent an XML file as Python objects. Some
-# XML files returned by NCBI look like lists, others look like dictionaries,
-# and others look like a mix of lists and dictionaries.
-#
-# My approach is to classify each possible element in the XML as a plain
-# string, an integer, a list, a dictionary, or a structure. The latter is a
-# dictionary where the same key can occur multiple times; in Python, it is
-# represented as a dictionary where that key occurs once, pointing to a list
-# of values found in the XML file.
-#
-# The parser then goes through the XML and creates the appropriate Python
-# object for each element. The different levels encountered in the XML are
-# preserved on the Python side. So a subelement of a subelement of an element
-# is a value in a dictionary that is stored in a list which is a value in
-# some other dictionary (or a value in a list which itself belongs to a list
-# which is a value in a dictionary, and so on). Attributes encountered in
-# the XML are stored as a dictionary in a member .attributes of each element,
-# and the tag name is saved in a member .tag.
-#
-# To decide which kind of Python object corresponds to each element in the
-# XML, the parser analyzes the DTD referred at the top of (almost) every
-# XML file returned by the Entrez Utilities. This is preferred over a hand-
-# written solution, since the number of DTDs is rather large and their
-# contents may change over time. About half the code in this parser deals
-# wih parsing the DTD, and the other half with the XML itself.
-
-
-import os.path
-import urlparse
-import urllib
+import re
+import os
 import warnings
 from xml.parsers import expat
+from io import BytesIO
+import xml.etree.ElementTree as ET
+
+# Importing these functions with leading underscore as not intended for reuse
+from Bio._py3k import urlopen as _urlopen
+from Bio._py3k import urlparse as _urlparse
+from Bio._py3k import unicode
+
+__docformat__ = "restructuredtext en"
 
 # The following four classes are used to add a member .attributes to integers,
 # strings, lists, and dictionaries, respectively.
@@ -147,13 +155,35 @@ class ValidationError(ValueError):
 
 class DataHandler(object):
 
-    home = os.path.expanduser('~')
-    local_dtd_dir = os.path.join(home, '.biopython', 'Bio', 'Entrez', 'DTDs')
-    del home
+    import platform
+    if platform.system() == 'Windows':
+        directory = os.path.join(os.getenv("APPDATA"), "biopython")
+    else:  # Unix/Linux/Mac
+        home = os.path.expanduser('~')
+        directory = os.path.join(home, '.config', 'biopython')
+        del home
+    local_dtd_dir = os.path.join(directory, 'Bio', 'Entrez', 'DTDs')
+    local_xsd_dir = os.path.join(directory, 'Bio', 'Entrez', 'XSDs')
+    del directory
+    del platform
+    try:
+        os.makedirs(local_dtd_dir)  # use exist_ok=True on Python >= 3.2
+    except OSError as exception:
+        # Check if local_dtd_dir already exists, and that it is a directory.
+        # Trying os.makedirs first and then checking for os.path.isdir avoids
+        # a race condition.
+        if not os.path.isdir(local_dtd_dir):
+            raise exception
+    try:
+        os.makedirs(local_xsd_dir)  # use exist_ok=True on Python >= 3.2
+    except OSError as exception:
+        if not os.path.isdir(local_xsd_dir):
+            raise exception
 
-    global_dtd_dir = os.path.join(str(os.path.dirname(__file__)), "DTDs")
-    print(global_dtd_dir)
-
+    from Bio import Entrez
+    global_dtd_dir = os.path.join(str(Entrez.__path__[0]), "DTDs")
+    global_xsd_dir = os.path.join(str(Entrez.__path__[0]), "XSDs")
+    del Entrez
 
     def __init__(self, validate):
         self.stack = []
@@ -169,6 +199,7 @@ class DataHandler(object):
         self.parser = expat.ParserCreate(namespace_separator=" ")
         self.parser.SetParamEntityParsing(expat.XML_PARAM_ENTITY_PARSING_ALWAYS)
         self.parser.XmlDeclHandler = self.xmlDeclHandler
+        self.is_schema = False
 
     def read(self, handle):
         """Set up the parser and let it parse the XML results"""
@@ -177,12 +208,12 @@ class DataHandler(object):
         if handle.__class__.__name__ == 'EvilHandleHack':
             handle = handle._handle
         if hasattr(handle, "closed") and handle.closed:
-            #Should avoid a possible Segmentation Fault, see:
-            #http://bugs.python.org/issue4877
+            # Should avoid a possible Segmentation Fault, see:
+            # http://bugs.python.org/issue4877
             raise IOError("Can't parse a closed handle")
         try:
             self.parser.ParseFile(handle)
-        except expat.ExpatError, e:
+        except expat.ExpatError as e:
             if self.parser.StartElementHandler:
                 # We saw the initial <!xml declaration, so we can be sure that
                 # we are parsing XML data. Most likely, the XML file is
@@ -208,14 +239,14 @@ class DataHandler(object):
     def parse(self, handle):
         BLOCK = 1024
         while True:
-            #Read in another block of the file...
+            # Read in another block of the file...
             text = handle.read(BLOCK)
             if not text:
                 # We have reached the end of the XML file
                 if self.stack:
                     # No more XML data, but there is still some unfinished
                     # business
-                    raise CorruptedXMLError
+                    raise CorruptedXMLError("Premature end of XML stream")
                 try:
                     for record in self.object:
                         yield record
@@ -235,7 +266,7 @@ class DataHandler(object):
 
             try:
                 self.parser.Parse(text, False)
-            except expat.ExpatError, e:
+            except expat.ExpatError as e:
                 if self.parser.StartElementHandler:
                     # We saw the initial <!xml declaration, so we can be sure
                     # that we are parsing XML data. Most likely, the XML file
@@ -253,7 +284,7 @@ class DataHandler(object):
             records = self.stack[0]
             if not isinstance(records, list):
                 raise ValueError("The XML file does not represent a list. Please use Entrez.read instead of Entrez.parse")
-            while len(records) > 1: # Then the top record is finished
+            while len(records) > 1:  # Then the top record is finished
                 record = records.pop(0)
                 yield record
 
@@ -266,9 +297,28 @@ class DataHandler(object):
         self.parser.StartNamespaceDeclHandler = self.startNamespaceDeclHandler
 
     def startNamespaceDeclHandler(self, prefix, un):
-        raise NotImplementedError("The Bio.Entrez parser cannot handle XML data that make use of XML namespaces")
+        # This is an xml schema
+        if "Schema" in un:
+            self.is_schema = True
+        else:
+            raise NotImplementedError("The Bio.Entrez parser cannot handle XML data that make use of XML namespaces")
 
     def startElementHandler(self, name, attrs):
+        # preprocessing the xml schema
+        if self.is_schema:
+            if len(attrs) == 1:
+                schema = list(attrs.values())[0]
+                handle = self.open_xsd_file(os.path.basename(schema))
+                # if there is no local xsd file grab the url and parse the file
+                if not handle:
+                    handle = _urlopen(schema)
+                    text = handle.read()
+                    self.save_xsd_file(os.path.basename(schema), text)
+                    handle.close()
+                    self.parse_xsd(ET.fromstring(text))
+                else:
+                    self.parse_xsd(ET.fromstring(handle.read()))
+                    handle.close()
         self.content = ""
         if name in self.lists:
             object = ListElement()
@@ -276,16 +326,16 @@ class DataHandler(object):
             object = DictionaryElement()
         elif name in self.structures:
             object = StructureElement(self.structures[name])
-        elif name in self.items: # Only appears in ESummary
-            name = str(attrs["Name"]) # convert from Unicode
+        elif name in self.items:  # Only appears in ESummary
+            name = str(attrs["Name"])  # convert from Unicode
             del attrs["Name"]
-            itemtype = str(attrs["Type"]) # convert from Unicode
+            itemtype = str(attrs["Type"])  # convert from Unicode
             del attrs["Type"]
-            if itemtype=="Structure":
+            if itemtype == "Structure":
                 object = DictionaryElement()
             elif name in ("ArticleIds", "History"):
                 object = StructureElement(["pubmed", "medline"])
-            elif itemtype=="List":
+            elif itemtype == "List":
                 object = ListElement()
             else:
                 object = StringElement()
@@ -301,11 +351,11 @@ class DataHandler(object):
             else:
                 # this will not be stored in the record
                 object = ""
-        if object!="":
+        if object != "":
             object.tag = name
             if attrs:
                 object.attributes = dict(attrs)
-            if len(self.stack)!=0:
+            if len(self.stack) != 0:
                 current = self.stack[-1]
                 try:
                     current.append(object)
@@ -316,7 +366,7 @@ class DataHandler(object):
     def endElementHandler(self, name):
         value = self.content
         if name in self.errors:
-            if value=="":
+            if value == "":
                 return
             else:
                 raise RuntimeError(value)
@@ -332,7 +382,7 @@ class DataHandler(object):
             self.object = self.stack.pop()
             if self.object.itemtype in ("List", "Structure"):
                 return
-            elif self.object.itemtype=="Integer" and value:
+            elif self.object.itemtype == "Integer" and value:
                 value = IntegerElement(value)
             else:
                 # Convert Unicode strings to plain strings if possible
@@ -343,13 +393,16 @@ class DataHandler(object):
             name = self.object.itemname
         else:
             self.object = self.stack.pop()
+            value = re.sub(r"[\s]+", "", value)
+            if self.is_schema and value:
+                self.object.update({'data': value})
             return
         value.tag = name
         if self.attributes:
             value.attributes = dict(self.attributes)
             del self.attributes
         current = self.stack[-1]
-        if current!="":
+        if current != "":
             try:
                 current.append(value)
             except AttributeError:
@@ -358,24 +411,40 @@ class DataHandler(object):
     def characterDataHandler(self, content):
         self.content += content
 
+    def parse_xsd(self, root):
+        is_dictionary = False
+        name = ""
+        for child in root:
+            for element in child.getiterator():
+                if "element" in element.tag:
+                    if "name" in element.attrib:
+                        name = element.attrib['name']
+                if "attribute" in element.tag:
+                    is_dictionary = True
+            if is_dictionary:
+                self.dictionaries.append(name)
+                is_dictionary = False
+            else:
+                self.lists.append(name)
+
     def elementDecl(self, name, model):
         """This callback function is called for each element declaration:
         <!ELEMENT       name          (...)>
         encountered in a DTD. The purpose of this function is to determine
         whether this element should be regarded as a string, integer, list
         dictionary, structure, or error."""
-        if name.upper()=="ERROR":
+        if name.upper() == "ERROR":
             self.errors.append(name)
             return
-        if name=='Item' and model==(expat.model.XML_CTYPE_MIXED,
-                                    expat.model.XML_CQUANT_REP,
-                                    None, ((expat.model.XML_CTYPE_NAME,
-                                            expat.model.XML_CQUANT_NONE,
-                                            'Item',
-                                            ()
-                                           ),
-                                          )
-                                   ):
+        if name == 'Item' and model == (expat.model.XML_CTYPE_MIXED,
+                                        expat.model.XML_CQUANT_REP,
+                                        None, ((expat.model.XML_CTYPE_NAME,
+                                                expat.model.XML_CQUANT_NONE,
+                                                'Item',
+                                                ()
+                                                ),
+                                               )
+                                        ):
             # Special case. As far as I can tell, this only occurs in the
             # eSummary DTD.
             self.items.append(name)
@@ -385,7 +454,7 @@ class DataHandler(object):
                             expat.model.XML_CTYPE_CHOICE)
           and model[1] in (expat.model.XML_CQUANT_NONE,
                            expat.model.XML_CQUANT_OPT)
-          and len(model[3])==1):
+          and len(model[3]) == 1):
             model = model[3][0]
         # PCDATA declarations correspond to strings
         if model[0] in (expat.model.XML_CTYPE_MIXED,
@@ -422,7 +491,7 @@ class DataHandler(object):
                 else:
                     for child in children:
                         count(child)
-            elif name.upper()!="ERROR":
+            elif name.upper() != "ERROR":
                 if quantifier in (expat.model.XML_CQUANT_NONE,
                                   expat.model.XML_CQUANT_OPT):
                     single.append(name)
@@ -430,9 +499,9 @@ class DataHandler(object):
                                     expat.model.XML_CQUANT_REP):
                     multiple.append(name)
         count(model)
-        if len(single)==0 and len(multiple)==1:
+        if len(single) == 0 and len(multiple) == 1:
             self.lists.append(name)
-        elif len(multiple)==0:
+        elif len(multiple) == 0:
             self.dictionaries.append(name)
         else:
             self.structures.update({name: multiple})
@@ -454,31 +523,70 @@ class DataHandler(object):
             return handle
         return None
 
+    def open_xsd_file(self, filename):
+        path = os.path.join(DataHandler.local_xsd_dir, filename)
+        try:
+            handle = open(path, "rb")
+        except IOError:
+            pass
+        else:
+            return handle
+        path = os.path.join(DataHandler.global_xsd_dir, filename)
+        try:
+            handle = open(path, "rb")
+        except IOError:
+            pass
+        else:
+            return handle
+        return None
+
+    def save_dtd_file(self, filename, text):
+        path = os.path.join(DataHandler.local_dtd_dir, filename)
+        try:
+            handle = open(path, "wb")
+        except IOError:
+            warnings.warn("Failed to save %s at %s" % (filename, path))
+        else:
+            handle.write(text)
+            handle.close()
+
+    def save_xsd_file(self, filename, text):
+        path = os.path.join(DataHandler.local_xsd_dir, filename)
+        try:
+            handle = open(path, "wb")
+        except IOError:
+            warnings.warn("Failed to save %s at %s" % (filename, path))
+        else:
+            handle.write(text)
+            handle.close()
+
     def externalEntityRefHandler(self, context, base, systemId, publicId):
         """The purpose of this function is to load the DTD locally, instead
         of downloading it from the URL specified in the XML. Using the local
         DTD results in much faster parsing. If the DTD is not found locally,
         we try to download it. If new DTDs become available from NCBI,
         putting them in Bio/Entrez/DTDs will allow the parser to see them."""
-        urlinfo = urlparse.urlparse(systemId)
-        #Following attribute requires Python 2.5+
-        #if urlinfo.scheme=='http':
-        if urlinfo[0]=='http':
+        urlinfo = _urlparse(systemId)
+        # Following attribute requires Python 2.5+
+        # if urlinfo.scheme=='http':
+        if urlinfo[0] in ['http', 'https', 'ftp']:
             # Then this is an absolute path to the DTD.
             url = systemId
-        elif urlinfo[0]=='':
+        elif urlinfo[0] == '':
             # Then this is a relative path to the DTD.
             # Look at the parent URL to find the full path.
             try:
-                url = self.dtd_urls[-1]
+                source = self.dtd_urls[-1]
             except IndexError:
                 # Assume the default URL for DTDs if the top parent
                 # does not contain an absolute path
                 source = "http://www.ncbi.nlm.nih.gov/dtd/"
             else:
-                source = os.path.dirname(url)
+                source = os.path.dirname(source)
             # urls always have a forward slash, don't use os.path.join
             url = source.rstrip("/") + "/" + systemId
+        else:
+            raise ValueError("Unexpected URL scheme %r" % (urlinfo[0]))
         self.dtd_urls.append(url)
         # First, try to load the local version of the DTD file
         location, filename = os.path.split(systemId)
@@ -486,44 +594,14 @@ class DataHandler(object):
         if not handle:
             # DTD is not available as a local file. Try accessing it through
             # the internet instead.
-            message = """\
-Unable to load DTD file %s.
-
-Bio.Entrez uses NCBI's DTD files to parse XML files returned by NCBI Entrez.
-Though most of NCBI's DTD files are included in the Biopython distribution,
-sometimes you may find that a particular DTD file is missing. While we can
-access the DTD file through the internet, the parser is much faster if the
-required DTD files are available locally.
-
-For this purpose, please download %s from
-
-%s
-
-and save it either in directory
-
-%s
-
-or in directory
-
-%s
-
-in order for Bio.Entrez to find it.
-
-Alternatively, you can save %s in the directory
-Bio/Entrez/DTDs in the Biopython distribution, and reinstall Biopython.
-
-Please also inform the Biopython developers about this missing DTD, by
-reporting a bug on https://github.com/biopython/biopython/issues or sign
-up to our mailing list and emailing us, so that we can include it with the
-next release of Biopython.
-
-Proceeding to access the DTD file through the internet...
-""" % (filename, filename, url, self.global_dtd_dir, self.local_dtd_dir, filename)
-            warnings.warn(message)
             try:
-                handle = urllib.urlopen(url)
+                handle = _urlopen(url)
             except IOError:
-                raise RuntimeException("Failed to access %s at %s" % (filename, url))
+                raise RuntimeError("Failed to access %s at %s" % (filename, url))
+            text = handle.read()
+            handle.close()
+            self.save_dtd_file(filename, text)
+            handle = BytesIO(text)
 
         parser = self.parser.ExternalEntityParserCreate(context)
         parser.ElementDeclHandler = self.elementDecl
