@@ -3,7 +3,8 @@
 
 ## Description:
 This program will download sequences *en masse* from several NCBI databases (at the user's chioce).
-It will run on both python2 and python3!
+After the downloading is finished, the program will check the resulting file for any missing sequences and continuously retry the download until all sequences are present in the local file.
+It will run on both python2 and python3.
 
 
 ## Installation:
