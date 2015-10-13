@@ -43,9 +43,9 @@ from io import BytesIO
 import xml.etree.ElementTree as ET
 
 # Importing these functions with leading underscore as not intended for reuse
-from Bio._py3k import urlopen as _urlopen
-from Bio._py3k import urlparse as _urlparse
-from Bio._py3k import unicode
+from py3k import urlopen as _urlopen
+from py3k import urlparse as _urlparse
+from py3k import unicode
 
 __docformat__ = "restructuredtext en"
 
@@ -180,7 +180,7 @@ class DataHandler(object):
         if not os.path.isdir(local_xsd_dir):
             raise exception
 
-    from Bio import Entrez
+    import Entrez
     global_dtd_dir = os.path.join(str(Entrez.__path__[0]), "DTDs")
     global_xsd_dir = os.path.join(str(Entrez.__path__[0]), "XSDs")
     del Entrez
