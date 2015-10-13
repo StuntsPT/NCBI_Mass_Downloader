@@ -181,8 +181,10 @@ class DataHandler(object):
             raise exception
 
     import Entrez
-    global_dtd_dir = os.path.join(str(Entrez.__path__[0]), "DTDs")
-    global_xsd_dir = os.path.join(str(Entrez.__path__[0]), "XSDs")
+
+    global_dtd_dir = os.path.join(str(os.path.dirname(__loader__.path)), "DTDs")
+    global_xsd_dir = os.path.join(str(os.path.dirname(__loader__.path)), "XSDs")
+
     del Entrez
 
     def __init__(self, validate):
