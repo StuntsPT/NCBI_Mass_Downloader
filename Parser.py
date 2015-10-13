@@ -182,8 +182,8 @@ class DataHandler(object):
 
     import Entrez
 
-    global_dtd_dir = os.path.join(str(os.path.dirname(__loader__.path)), "DTDs")
-    global_xsd_dir = os.path.join(str(os.path.dirname(__loader__.path)), "XSDs")
+    global_dtd_dir = os.path.join(str(os.path.realpath(__file__)), "DTDs")
+    global_xsd_dir = os.path.join(str(os.path.realpath(__file__)), "XSDs")
 
     del Entrez
 
