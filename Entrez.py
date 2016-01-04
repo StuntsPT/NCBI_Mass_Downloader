@@ -1,5 +1,7 @@
 # Copyright 1999-2000 by Jeffrey Chang.  All rights reserved.
-# Copyright 2008 by Michiel de Hoon.  All rights reserved.
+# Copyright 2008-2013 by Michiel de Hoon.  All rights reserved.
+# Revisions copyright 2011-2015 by Peter Cock. All rights reserved.
+# Revisions copyright 2015 by Eric Rasche. All rights reserved.
 # This code is part of the Biopython distribution and governed by its
 # license.  Please see the LICENSE file that should have been included
 # as part of this package.
@@ -9,13 +11,30 @@
 The main Entrez web page is available at:
 http://www.ncbi.nlm.nih.gov/Entrez/
 
-A list of the Entrez utilities is available at:
-http://www.ncbi.nlm.nih.gov/entrez/utils/utils_index.html
+Entrez Programming Utilities web page is available at:
+http://www.ncbi.nlm.nih.gov/books/NBK25501/
+
+This module provides a number of functions like ``efetch`` (short for
+Entrez Fetch) which will return the data as a handle object. This is
+a standard interface used in Python for reading data from a file, or
+in this case a remote network connection, and provides methods like
+``.read()`` or offers iteration over the contents line by line. See
+also "What the heck is a handle?" in the Biopython Tutorial and
+Cookbook: http://biopython.org/DIST/docs/tutorial/Tutorial.html
+http://biopython.org/DIST/docs/tutorial/Tutorial.pdf
+
+Unlike a handle to a file on disk from the ``open(filename)`` function,
+which has a ``.name`` attribute giving the filename, the handles from
+``Bio.Entrez`` all have a ``.url`` attribute instead giving the URL
+used to connect to the NCBI Entrez API.
+
+The Entrez module also provides an XML parser which takes a handle
+as input.
 
 Variables:
 
     - email        Set the Entrez email parameter (default is not set).
-    - tool         Set the Entrez tool parameter (default is  biopython).
+    - tool         Set the Entrez tool parameter (default is ``biopython``).
 
 Functions:
 
@@ -99,7 +118,7 @@ def epost(db, **keywds):
     environment to use with subsequent search strategies.
 
     See the online documentation for an explanation of the parameters:
-    http://www.ncbi.nlm.nih.gov/entrez/query/static/epost_help.html
+    http://www.ncbi.nlm.nih.gov/books/NBK25499/#chapter4.EPost
 
     Return a handle to the results.
 
@@ -118,7 +137,7 @@ def efetch(db, **keywords):
     more UIs or from user's environment.
 
     See the online documentation for an explanation of the parameters:
-    http://www.ncbi.nlm.nih.gov/entrez/query/static/efetch_help.html
+    http://www.ncbi.nlm.nih.gov/books/NBK25499/#chapter4.EFetch
 
     Return a handle to the results.
 
@@ -132,6 +151,9 @@ def efetch(db, **keywords):
     >>> print(handle.readline().strip())
     LOCUS       AY851612                 892 bp    DNA     linear   PLN 10-APR-2007
     >>> handle.close()
+
+    This will automatically use an HTTP POST rather than HTTP GET if there
+    are over 200 identifiers as recommended by the NCBI.
 
     **Warning:** The NCBI changed the default retmode in Feb 2012, so many
     databases which previously returned text output now give XML.
@@ -152,7 +174,7 @@ def efetch(db, **keywords):
             # NCBI prefers an HTTP POST instead of an HTTP GET if there are
             # more than about 200 IDs
             post = True
-    return _open(cgi, variables, post)
+    return _open(cgi, variables, post=post)
 
 
 def esearch(db, term, **keywds):
@@ -163,7 +185,7 @@ def esearch(db, term, **keywds):
     for future use in the user's environment.
 
     See the online documentation for an explanation of the parameters:
-    http://www.ncbi.nlm.nih.gov/entrez/query/static/esearch_help.html
+    http://www.ncbi.nlm.nih.gov/books/NBK25499/#chapter4.ESearch
 
     Return a handle to the results which are always in XML format.
 
@@ -201,7 +223,7 @@ def elink(**keywds):
     database, or lists LinkOut URLs and attributes for multiple IDs.
 
     See the online documentation for an explanation of the parameters:
-    http://www.ncbi.nlm.nih.gov/entrez/query/static/elink_help.html
+    http://www.ncbi.nlm.nih.gov/books/NBK25499/#chapter4.ELink
 
     Return a handle to the results, by default in XML format.
 
@@ -237,7 +259,7 @@ def einfo(**keywds):
     available links for each Entrez database.
 
     See the online documentation for an explanation of the parameters:
-    http://www.ncbi.nlm.nih.gov/entrez/query/static/einfo_help.html
+    http://www.ncbi.nlm.nih.gov/books/NBK25499/#chapter4.EInfo
 
     Return a handle to the results, by default in XML format.
 
@@ -265,7 +287,7 @@ def esummary(**keywds):
     from the user's environment.
 
     See the online documentation for an explanation of the parameters:
-    http://www.ncbi.nlm.nih.gov/entrez/query/static/esummary_help.html
+    http://www.ncbi.nlm.nih.gov/books/NBK25499/#chapter4.ESummary
 
     Return a handle to the results, by default in XML format.
 
@@ -297,7 +319,7 @@ def egquery(**keywds):
     using Global Query.
 
     See the online documentation for an explanation of the parameters:
-    http://www.ncbi.nlm.nih.gov/entrez/query/static/egquery_help.html
+    http://www.ncbi.nlm.nih.gov/books/NBK25499/#chapter4.EGQuery
 
     Return a handle to the results in XML format.
 
@@ -330,7 +352,7 @@ def espell(**keywds):
     ESpell retrieves spelling suggestions, if available.
 
     See the online documentation for an explanation of the parameters:
-    http://www.ncbi.nlm.nih.gov/entrez/query/static/espell_help.html
+    http://www.ncbi.nlm.nih.gov/books/NBK25499/#chapter4.ESpell
 
     Return a handle to the results, by default in XML format.
 
@@ -448,18 +470,26 @@ def parse(handle, validate=True):
     (if any) of each element in a dictionary my_element.attributes, and
     the tag name in my_element.tag.
     """
-    from Parser import DataHandler
+    from .Parser import DataHandler
     handler = DataHandler(validate)
     records = handler.parse(handle)
     return records
 
 
-def _open(cgi, params=None, post=False, ecitmatch=False):
+def _open(cgi, params=None, post=None, ecitmatch=False):
     """Helper function to build the URL and open a handle to it (PRIVATE).
 
     Open a handle to Entrez.  cgi is the URL for the cgi script to access.
     params is a dictionary with the options to pass to it.  Does some
     simple error checking, and will raise an IOError if it encounters one.
+
+    The arugment post should be a boolean to explicitly control if an HTTP
+    POST should be used rather an HTTP GET based on the query length.
+    By default (post=None), POST is used if the query URL would be over
+    1000 characters long.
+
+    The arugment post should be a boolean to explicitly control if an HTTP
+    POST should be used rather an HTTP GET based on the query length.
 
     This function also enforces the "up to three queries per second rule"
     to avoid abusing the NCBI servers.
@@ -500,12 +530,17 @@ is A.N.Other@example.com, you can specify it as follows:
 In case of excessive usage of the E-utilities, NCBI will attempt to contact
 a user at the email address provided before blocking access to the
 E-utilities.""", UserWarning)
+
     # Open a handle to Entrez.
     options = _urlencode(params, doseq=True)
     # _urlencode encodes pipes, which NCBI expects in ECitMatch
     if ecitmatch:
         options = options.replace('%7C', '|')
     # print cgi + "?" + options
+
+    # By default, post is None. Set to a boolean to over-ride length choice:
+    if post is None and len(options) > 1000:
+        post = True
     try:
         if post:
             # HTTP POST
