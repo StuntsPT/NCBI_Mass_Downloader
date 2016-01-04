@@ -40,7 +40,7 @@ class Downloader(object):
         Submit search to NCBI and return the records.
         """
         handle = Entrez.esearch(db=self.database, term=self.term,
-                                usehistory="y", retmax=10000000)
+                                usehistory="y", retmax=100000000)
         record = Entrez.read(handle)
         handle.close()
 
@@ -52,7 +52,7 @@ class Downloader(object):
         Submit id_list to NCBI via epost and return the records
         """
         IDs_string = ",".join(IDs)
-        handle = Entrez.epost(self.database, id=IDs_string, retmax=10000000)
+        handle = Entrez.epost(self.database, id=IDs_string, retmax=100000000)
         record = Entrez.read(handle)
         handle.close()
 
