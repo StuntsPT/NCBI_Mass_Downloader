@@ -152,7 +152,8 @@ class Downloader(object):
             if self.gui == 0:
                 sys.exit("Program finished without error.")
         else:
-            print("%s sequences did not download correctly (or at all). Retrying..." %(len(missing_IDs)))
+            print("%s sequences did not download correctly (or at all). \
+                   Retrying..." %(len(missing_IDs)))
             count, IDs, webenv, query_key = self.NCBI_post(IDs)
             self.NCBI_history_fetch(count, IDs, webenv, query_key, 1000, 2)
 
@@ -163,8 +164,8 @@ class Downloader(object):
         """
         temp_file = self.outfile + ".tmp"
         move(self.outfile, temp_file)
-        original_file = open(temp_file,'r')
-        new_file = open(self.outfile,'w')
+        original_file = open(temp_file, 'r')
+        new_file = open(self.outfile, 'w')
         verified_IDs = set()
 
         for lines in original_file:
@@ -185,7 +186,9 @@ class Downloader(object):
 
 
     def runEverything(self):
-        # Run the functions in order
+        """
+        Run the functions in order.
+        """
         batch_size = 1000
         Entrez.email = self.email
 
@@ -195,8 +198,11 @@ class Downloader(object):
 
 
 def main():
-
-    dl = Downloader(sys.argv[1],sys.argv[3],sys.argv[2],sys.argv[4], 0)
+    """
+    Main function. Defines how the arguments get passed to the rest of the
+    program.
+    """
+    dl = Downloader(sys.argv[1], sys.argv[3], sys.argv[2], sys.argv[4], 0)
     dl.runEverything()
 
 
