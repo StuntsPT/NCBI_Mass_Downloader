@@ -19,11 +19,10 @@
 
 import sys
 import re
-import Entrez
-
 from os import remove, stat
 from shutil import move
 
+import Entrez
 
 class Downloader(object):
     def __init__(self, email, database, term, outfile, gui):
@@ -63,7 +62,7 @@ class Downloader(object):
         return count, IDs, webenv, query_key
 
 
-    def Record_processor(self,record):
+    def Record_processor(self, record):
         """
         Processes the record into sparate usefull information
         """
@@ -82,10 +81,10 @@ class Downloader(object):
         Fetches results from NCBI using history.
         """
         try:
-            a = open(self.outfile,'r')
+            a = open(self.outfile, 'r')
             a.close()
         except:
-            a = open(self.outfile,'w')
+            a = open(self.outfile, 'w')
             a.close()
         if Run == 1 and stat(self.outfile).st_size != 0:
             self.ReDownloader(IDs)
@@ -98,9 +97,9 @@ class Downloader(object):
                 return None
 
             else:
-                outfile = open(self.outfile,'a')
+                outfile = open(self.outfile, 'a')
                 if self.gui == 1:
-                        self.max_seq.emit(count)
+                    self.max_seq.emit(count)
                 if Bsize > count:
                     Bsize = count
                 for start in range(0, count, Bsize):
@@ -108,7 +107,8 @@ class Downloader(object):
                         end = start + Bsize
                     else:
                         end = count
-                    print("Downloading record %i to %i of %i" %(start+1, end, count))
+                    print("Downloading record %i to %i of %i" %(start+1, end,
+                                                                count))
 
                     if self.gui == 1:
                         self.prog_data.emit(end)
@@ -117,7 +117,12 @@ class Downloader(object):
                     # If the servers are dead, well, you were not going anywhere anyway...
                     while True:
                         try:
-                            fetch_handle = Entrez.efetch(db=self.database, rettype="fasta", retstart=start, retmax=Bsize, webenv=webenv, query_key=query_key)
+                            fetch_handle = Entrez.efetch(db=self.database,
+                                                         rettype="fasta",
+                                                         retstart=start,
+                                                         retmax=Bsize,
+                                                         webenv=webenv,
+                                                         query_key=query_key)
                             break
                         except:
                             pass
@@ -164,7 +169,7 @@ class Downloader(object):
 
         for lines in original_file:
             if lines.startswith(">"):
-                ID = re.search("gi\|.*?\|",lines).group(0)[3:-1]
+                ID = re.search("gi\|.*?\|", lines).group(0)[3:-1]
                 verified_IDs.add(ID)
                 new_file.write(lines)
             elif lines.strip().startswith("<") or lines.startswith("\n"):
