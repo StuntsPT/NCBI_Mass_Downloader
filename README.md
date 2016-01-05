@@ -61,4 +61,4 @@ GPLv3
 
 ## Found a bug?
 Or would like a feature added? Or maybe drop some feedback?
-Just open an issue on github.
+Just [open a new issue](https://github.com/StuntsPT/NCBI_Mass_Downloader/issues/new).
