@@ -77,7 +77,7 @@ class Downloader(object):
             if count == 0 and self.gui == 0:
                 sys.exit("No records found in database!")
             elif count == 0:
-                self.no_match.emit("No sequences in the database matched your query.")
+                self.no_match.emit("No sequences in the database matched your " "query.")
                 return None
 
             else:
@@ -136,8 +136,8 @@ class Downloader(object):
             if self.gui == 0:
                 sys.exit("Program finished without error.")
         else:
-            print("%s sequences did not download correctly (or at all). \
-                   Retrying..." %(len(missing_IDs)))
+            print("%s sequences did not download correctly (or at all). "
+                  "Retrying..." %(len(missing_IDs)))
             self.NCBI_history_fetch(len(IDs), IDs, webenv, query_key, 1000, 2)
 
 
