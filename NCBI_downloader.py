@@ -20,6 +20,13 @@
 
 import sys
 
+def kill_switch(*args):
+    """
+    Make sure the program will allways exit on Ctrl+C.
+    """
+    print("Ctrl+C detected, ending all processes and quitting.")
+    sys.exit(0)
+
 def main():
 
     if len(sys.argv) < 2:
@@ -32,5 +39,5 @@ def main():
         dl.runEverything()
 
 if __name__ == '__main__':
+    signal.signal(signal.SIGINT, gracious_exit)
     main()
-
