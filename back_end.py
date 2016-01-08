@@ -152,6 +152,10 @@ class Downloader(object):
         verified_IDs = set()
 
         for lines in original_file:
+            # Why do this? Sometimes, empty lines are downloaded, and this
+            # method removes them. It also removes some "^<" that ocasinally
+            # show up. Not sure whay that is, but this is a good (albeit slow)
+            # workaround.
             if lines.startswith(">"):
                 ID = re.search("gi\|.*?\|", lines).group(0)[3:-1]
                 verified_IDs.add(ID)
