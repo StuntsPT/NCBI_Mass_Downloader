@@ -130,7 +130,7 @@ class Downloader(object):
         for i in IDs:
             if i not in ver_IDs:
                 missing_IDs.add(i)
-        IDs = missing_IDs #Improve performance on subsequent runs
+        IDs = missing_IDs # Improve performance on subsequent runs
         if len(missing_IDs) == 0:
             print("All sequences were downloaded correctly. Good!")
             if self.gui == 0:
