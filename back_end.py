@@ -21,6 +21,7 @@ import sys
 import re
 from os import remove, stat
 from shutil import move
+from time import sleep
 
 import Entrez
 
@@ -48,12 +49,13 @@ class Downloader(object):
 
     def Record_processor(self, record):
         """
-        Processes the record into sparate usefull information
+        Splits the record returned by Entrez into sparate variables and returns
+        them.
         """
-        count = int(record["Count"])
-        IDs = record["IdList"]
-        webenv = record["WebEnv"]
-        query_key = record["QueryKey"]
+        count = int(record["Count"]) # Int
+        IDs = record["IdList"] # List
+        webenv = record["WebEnv"] # String
+        query_key = record["QueryKey"] #String
 
         assert count == len(IDs)
 
