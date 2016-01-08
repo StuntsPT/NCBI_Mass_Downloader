@@ -99,8 +99,7 @@ class Downloader(object):
                     if self.gui == 1:
                         self.prog_data.emit(end)
 
-                    # Make sure that even on server errors the program carries on.
-                    # If the servers are dead, well, you were not going anywhere anyway...
+                    # Make sure that the program carries on despite server "hammering" errors.
                     while True:
                         try:
                             fetch_handle = Entrez.efetch(db=self.database,
