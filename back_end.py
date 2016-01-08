@@ -46,22 +46,6 @@ class Downloader(object):
         return record
 
 
-    def NCBI_post(self, IDs):
-        """
-        Submit id_list to NCBI via epost and return the records
-        """
-        IDs_string = ",".join(IDs)
-        handle = Entrez.epost(self.database, id=IDs_string, retmax=100000000)
-        record = Entrez.read(handle)
-        handle.close()
-
-        count = len(IDs)
-        webenv = record["WebEnv"]
-        query_key = record["QueryKey"]
-
-        return count, IDs, webenv, query_key
-
-
     def Record_processor(self, record):
         """
         Processes the record into sparate usefull information
@@ -87,7 +71,7 @@ class Downloader(object):
             a = open(self.outfile, 'w')
             a.close()
         if Run == 1 and stat(self.outfile).st_size != 0:
-            self.ReDownloader(IDs)
+            self.ReDownloader(IDs, webenv, query_key)
         else:
 
             if count == 0 and self.gui == 0:
@@ -133,10 +117,10 @@ class Downloader(object):
             outfile.close()
         except:
             pass
-        self.ReDownloader(IDs)
+        self.ReDownloader(IDs, webenv, query_key)
 
 
-    def ReDownloader(self, IDs):
+    def ReDownloader(self, IDs, webenv, query_key):
         """
         Checks for missing sequences.
         """
@@ -154,8 +138,7 @@ class Downloader(object):
         else:
             print("%s sequences did not download correctly (or at all). \
                    Retrying..." %(len(missing_IDs)))
-            count, IDs, webenv, query_key = self.NCBI_post(IDs)
-            self.NCBI_history_fetch(count, IDs, webenv, query_key, 1000, 2)
+            self.NCBI_history_fetch(len(IDs), IDs, webenv, query_key, 1000, 2)
 
 
     def Error_finder(self):
