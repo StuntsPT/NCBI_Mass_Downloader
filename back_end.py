@@ -109,11 +109,16 @@ class Downloader(object):
                                                          retmax=Bsize,
                                                          webenv=webenv,
                                                          query_key=query_key)
+                            data = fetch_handle.read()
+                            fetch_handle.close()
+                            if data.startswith("<?"):
+                                raise ValueError("NCBI server error.")
                             break
-                        except:
+                        except ValueError:
+                            print("NCBI is retuning XML instead of sequence "
+                                  "data. Trying the same chunk again in 8\'\'.")
+                            sleep(8)
                             pass
-                    data = fetch_handle.read()
-                    fetch_handle.close()
                     outfile.write(data)
         try:
             outfile.close()
@@ -140,7 +145,7 @@ class Downloader(object):
         else:
             print("%s sequences did not download correctly (or at all). "
                   "Retrying..." %(len(missing_IDs)))
-            self.NCBI_history_fetch(len(IDs), IDs, webenv, query_key, 1000, 2)
+            self.NCBI_history_fetch(len(IDs), IDs, webenv, query_key, 500, 2)
 
 
     def Error_finder(self):
@@ -178,7 +183,7 @@ class Downloader(object):
         """
         Run the functions in order.
         """
-        batch_size = 1000
+        batch_size = 500
         Entrez.email = self.email
 
         rec = self.NCBI_search()
