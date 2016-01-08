@@ -19,6 +19,7 @@
 #Or run without arguments for the GUI version.
 
 import sys
+import signal
 
 def kill_switch(*args):
     """
