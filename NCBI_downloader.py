@@ -40,5 +40,5 @@ def main():
         dl.runEverything()
 
 if __name__ == '__main__':
-    signal.signal(signal.SIGINT, gracious_exit)
+    signal.signal(signal.SIGINT, kill_switch)
     main()
