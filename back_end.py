@@ -77,9 +77,9 @@ class Downloader(object):
 
         else:
             if count == 0 and self.gui == 0:
-                sys.exit("No records found in database!")
+                sys.exit("Your serch query returned no results!")
             elif count == 0:
-                self.no_match.emit("No sequences in the database matched your " "query.")
+                self.no_match.emit("Your serch query returned no results!")
                 return None
 
             else:
