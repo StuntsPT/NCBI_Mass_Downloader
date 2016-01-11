@@ -73,7 +73,7 @@ class Downloader(object):
             a = open(self.outfile, 'w')
             a.close()
         if Run == 1 and stat(self.outfile).st_size != 0:
-            self.ReDownloader(IDs, webenv, query_key)
+            self.ReDownloader(IDs, webenv, query_key, Bsize)
         else:
 
             if count == 0 and self.gui == 0:
@@ -100,6 +100,7 @@ class Downloader(object):
                         self.prog_data.emit(end)
 
                     # Make sure that the program carries on despite server "hammering" errors.
+                    attempt = 0
                     while True:
                         try:
                             fetch_handle = Entrez.efetch(db=self.database,
@@ -112,69 +113,67 @@ class Downloader(object):
                             fetch_handle.close()
                             if data.startswith("<?"):
                                 raise ValueError("NCBI server error.")
-                            break
+                            else:
+                                data = data.replace("\n\n","\n")
+                                break
                         except ValueError:
-                            print("NCBI is retuning XML instead of sequence "
-                                  "data. Trying the same chunk again in 8\'\'.")
-                            sleep(8)
-                            pass
+                            if attempt < 5:
+                                print("NCBI is retuning XML instead of sequence"
+                                      " data. Trying the same chunk again in "
+                                      "8\'\'.")
+                                attempt += 1
+                                sleep(8)
+                                pass
+                            else:
+                                print("Too many errors in a row. Let's make a "
+                                      "larger 20\'\' pause and try again.")
+                                attempt = 0
+                                sleep(20)
+                                pass
                     outfile.write(data)
         try:
             outfile.close()
         except:
             pass
-        self.ReDownloader(IDs, webenv, query_key)
+        self.ReDownloader(IDs, webenv, query_key, Bsize)
 
 
-    def ReDownloader(self, IDs, webenv, query_key):
+    def ReDownloader(self, IDs, webenv, query_key, Bsize):
         """
         Checks for missing sequences.
         """
         print("Checking for sequences that did not download... Please wait.")
-        ver_IDs = self.Error_finder()
-        missing_IDs = set()
+        ver_IDs = self.Error_finder(self.outfile)
+        missing_IDs = []
         for i in IDs:
             if i not in ver_IDs:
-                missing_IDs.add(i)
+                missing_IDs.append(i)
+        numb_missing = len(missing_IDs)
         IDs = missing_IDs # Improve performance on subsequent runs
-        if len(missing_IDs) == 0:
+        if numb_missing == 0:
             print("All sequences were downloaded correctly. Good!")
             if self.gui == 0:
                 sys.exit("Program finished without error.")
         else:
             print("%s sequences did not download correctly (or at all). "
-                  "Retrying..." %(len(missing_IDs)))
-            self.NCBI_history_fetch(len(IDs), IDs, webenv, query_key, 500, 2)
+                  "Retrying..." %(numb_missing))
+            self.NCBI_history_fetch(numb_missing, IDs, webenv, query_key, Bsize,
+                                    2)
 
 
-    def Error_finder(self):
+    def Error_finder(self, target_file):
         """
         Looks for errors in the output fasta and retruns a list of necessary retries.
         """
-        temp_file = self.outfile + ".tmp"
-        move(self.outfile, temp_file)
-        original_file = open(temp_file, 'r')
-        new_file = open(self.outfile, 'w')
+        target_handle = open(target_file, 'r')
         verified_IDs = set()
 
-        for lines in original_file:
-            # Why do this? Sometimes, empty lines are downloaded, and this
-            # method removes them. It also removes some "^<" that ocasinally
-            # show up. Not sure whay that is, but this is a good (albeit slow)
-            # workaround.
+        for lines in target_handle:
             if lines.startswith(">"):
                 ID = re.search("gi\|.*?\|", lines).group(0)[3:-1]
                 verified_IDs.add(ID)
-                new_file.write(lines)
-            elif lines.strip().startswith("<") or lines.startswith("\n"):
-                pass
-            else:
-                new_file.write(lines)
 
-        original_file.close()
-        new_file.close()
-        remove(temp_file)
-
+        target_handle.close()
         return verified_IDs
 
 
@@ -182,7 +181,7 @@ class Downloader(object):
         """
         Run the functions in order.
         """
-        batch_size = 500
+        batch_size = 2000
         Entrez.email = self.email
 
         rec = self.NCBI_search()
