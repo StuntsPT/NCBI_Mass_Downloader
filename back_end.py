@@ -19,8 +19,7 @@
 
 import sys
 import re
-from os import remove, stat
-from shutil import move
+from os import stat
 from time import sleep
 
 import Entrez
