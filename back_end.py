@@ -181,7 +181,7 @@ class Downloader(object):
         """
         Run the functions in order.
         """
-        batch_size = 2000
+        batch_size = 3000
         Entrez.email = self.email
 
         rec = self.NCBI_search()
