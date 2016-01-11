@@ -177,7 +177,8 @@ class Downloader(object):
 
     def fetch_by_id(self, IDs, Bsize):
         """
-        Fetches NCBI data based on the IDs, rather than a search query.
+        Fetches NCBI data based on the IDs, rather than a search query. Returns
+        the data handle string.
         """
         id_handle = Entrez.efetch(db=self.database,
                                   id=IDs,
@@ -192,7 +193,8 @@ class Downloader(object):
 
     def fetch_by_history(self, start, Bsize, webenv, query_key):
         """
-        Fetches NCBI data based on the provided search query.
+        Fetches NCBI data based on the provided search query. Returns the data
+        handle string.
         """
         hist_handle = Entrez.efetch(db=self.database,
                                     retstart=start,
