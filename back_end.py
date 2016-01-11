@@ -69,7 +69,7 @@ class Downloader(object):
         try:
             a = open(self.outfile, 'r')
             a.close()
-        except FileNotFoundError:
+        except IOError:
             a = open(self.outfile, 'w')
             a.close()
         if Run == 1 and stat(self.outfile).st_size != 0:
