@@ -99,18 +99,17 @@ class Downloader(object):
                     if self.gui == 1:
                         self.prog_data.emit(end)
 
+                    if Run == 1:
+                        fetch_func = self.fetch_by_history
+                        fetch_args = start, Bsize, webenv, query_key
+                    else:
+                        fetch_func = self.fetch_by_id
+                        fetch_args = IDs, Bsize
                     # Make sure that the program carries on despite server "hammering" errors.
                     attempt = 0
                     while True:
                         try:
-                            fetch_handle = Entrez.efetch(db=self.database,
-                                                         rettype="fasta",
-                                                         retstart=start,
-                                                         retmax=Bsize,
-                                                         webenv=webenv,
-                                                         query_key=query_key)
-                            data = fetch_handle.read()
-                            fetch_handle.close()
+                            data = fetch_func(*fetch_args)
                             if data.startswith("<?"):
                                 raise ValueError("NCBI server error.")
                             else:
@@ -175,6 +174,38 @@ class Downloader(object):
 
         target_handle.close()
         return verified_IDs
+
+
+    def fetch_by_id(self, IDs, Bsize):
+        """
+        Fetches NCBI data based on the IDs, rather than a search query.
+        """
+        id_handle = Entrez.efetch(db=self.database,
+                                  id=IDs,
+                                  rettype="fasta",
+                                  retmode="text",
+                                  retmax=Bsize)
+        data = id_handle.read()
+        id_handle.close()
+
+        return data
+
+
+    def fetch_by_history(self, start, Bsize, webenv, query_key):
+        """
+        Fetches NCBI data based on the provided search query.
+        """
+        hist_handle = Entrez.efetch(db=self.database,
+                                    retstart=start,
+                                    rettype="fasta",
+                                    retmode="text",
+                                    retmax=Bsize,
+                                    webenv=webenv,
+                                    query_key=query_key)
+        data = hist_handle.read()
+        hist_handle.close()
+
+        return data
 
 
     def runEverything(self):
