@@ -61,20 +61,21 @@ class Downloader(object):
         return count, IDs, webenv, query_key
 
 
-    def NCBI_history_fetch(self, count, IDs, webenv, query_key, Bsize, Run):
+    def main_organizer(self, count, IDs, webenv, query_key, Bsize, Run):
         """
-        Fetches results from NCBI using history.
+        Defines what tasks need to be performed, handles NCBI server errors and
+        writes the sequences into the outfile.
         """
         try:
             a = open(self.outfile, 'r')
             a.close()
-        except:
+        except FileNotFoundError:
             a = open(self.outfile, 'w')
             a.close()
         if Run == 1 and stat(self.outfile).st_size != 0:
             self.ReDownloader(IDs, webenv, query_key, Bsize)
-        else:
 
+        else:
             if count == 0 and self.gui == 0:
                 sys.exit("No records found in database!")
             elif count == 0:
@@ -155,7 +156,7 @@ class Downloader(object):
         else:
             print("%s sequences did not download correctly (or at all). "
                   "Retrying..." %(numb_missing))
-            self.NCBI_history_fetch(numb_missing, IDs, webenv, query_key, Bsize,
+            self.main_organizer(numb_missing, IDs, webenv, query_key, Bsize,
                                     2)
 
 
@@ -218,7 +219,7 @@ class Downloader(object):
 
         rec = self.NCBI_search()
         count, IDs, webenv, query_key = self.Record_processor(rec)
-        self.NCBI_history_fetch(count, IDs, webenv, query_key, batch_size, 1)
+        self.main_organizer(count, IDs, webenv, query_key, batch_size, 1)
 
 
 def main():
