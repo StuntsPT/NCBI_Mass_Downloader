@@ -68,23 +68,23 @@ class Downloader(object):
         return count, IDs, webenv, query_key
 
 
-    def main_organizer(self, count, IDs, webenv, query_key, Bsize, Run):
+    def main_organizer(self, count, IDs, webenv, query_key, b_size, Run):
         """
         Defines what tasks need to be performed, handles NCBI server errors and
         writes the sequences into the outfile.
         """
         try:
             if Run == 1 and stat(self.outfile).st_size != 0:
-                self.re_downloader(IDs, webenv, query_key, Bsize)
+                self.re_downloader(IDs, webenv, query_key, b_size)
         except OSError:
             pass
 
         outfile = open(self.outfile, 'a')
-        if Bsize > count:
-            Bsize = count
-        for start in range(0, count, Bsize):
-            if start + Bsize < count:
-                end = start + Bsize
+        if b_size > count:
+            b_size = count
+        for start in range(0, count, b_size):
+            if start + b_size < count:
+                end = start + b_size
             else:
                 end = count
             print("Downloading record %i to %i of %i" %(start+1, end, count))
@@ -95,10 +95,10 @@ class Downloader(object):
 
             if Run == 1:
                 fetch_func = self.fetch_by_history
-                fetch_args = start, Bsize, webenv, query_key
+                fetch_args = start, b_size, webenv, query_key
             else:
                 fetch_func = self.fetch_by_id
-                fetch_args = IDs, Bsize
+                fetch_args = IDs, b_size
             # Make sure that the program carries on despite server "hammering" errors.
             attempt = 0
             while True:
@@ -123,10 +123,10 @@ class Downloader(object):
             outfile.write(data)
 
         outfile.close()
-        self.re_downloader(IDs, webenv, query_key, Bsize)
+        self.re_downloader(IDs, webenv, query_key, b_size)
 
 
-    def re_downloader(self, IDs, webenv, query_key, Bsize):
+    def re_downloader(self, IDs, webenv, query_key, b_size):
         """
         Checks for missing sequences.
         """
@@ -145,7 +145,7 @@ class Downloader(object):
         else:
             print("%s sequences did not download correctly (or at all). "
                   "Retrying..." %(numb_missing))
-            self.main_organizer(numb_missing, IDs, webenv, query_key, Bsize, 2)
+            self.main_organizer(numb_missing, IDs, webenv, query_key, b_size, 2)
 
 
     def Error_finder(self, target_file):
@@ -153,18 +153,18 @@ class Downloader(object):
         Looks for errors in the output fasta and retruns a list of necessary retries.
         """
         target_handle = open(target_file, 'r')
-        verified_IDs = set()
+        verified_ids = set()
 
         for lines in target_handle:
             if lines.startswith(">"):
                 ID = re.search("gi\|.*?\|", lines).group(0)[3:-1]
-                verified_IDs.add(ID)
+                verified_ids.add(ID)
 
         target_handle.close()
-        return verified_IDs
+        return verified_ids
 
 
-    def fetch_by_id(self, IDs, Bsize):
+    def fetch_by_id(self, IDs, b_size):
         """
         Fetches NCBI data based on the IDs, rather than a search query. Returns
         the data handle string.
@@ -173,14 +173,14 @@ class Downloader(object):
                                   id=IDs,
                                   rettype="fasta",
                                   retmode="text",
-                                  retmax=Bsize)
+                                  retmax=b_size)
         data = id_handle.read()
         id_handle.close()
 
         return data
 
 
-    def fetch_by_history(self, start, Bsize, webenv, query_key):
+    def fetch_by_history(self, start, b_size, webenv, query_key):
         """
         Fetches NCBI data based on the provided search query. Returns the data
         handle string.
@@ -189,7 +189,7 @@ class Downloader(object):
                                     retstart=start,
                                     rettype="fasta",
                                     retmode="text",
-                                    retmax=Bsize,
+                                    retmax=b_size,
                                     webenv=webenv,
                                     query_key=query_key)
         data = hist_handle.read()
@@ -218,8 +218,8 @@ def main():
     Main function. Defines how the arguments get passed to the rest of the
     program.
     """
-    dl = Downloader(sys.argv[1], sys.argv[3], sys.argv[2], sys.argv[4], 0)
-    dl.run_everything()
+    dler = Downloader(sys.argv[1], sys.argv[3], sys.argv[2], sys.argv[4], 0)
+    dler.run_everything()
 
 
 if __name__ == '__main__':
