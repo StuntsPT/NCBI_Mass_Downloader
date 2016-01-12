@@ -75,7 +75,8 @@ class Downloader(object):
         """
         try:
             if Run == 1 and stat(self.outfile).st_size != 0:
-                self.re_downloader(IDs, webenv, query_key, b_size)
+                gui_end = self.re_downloader(IDs, webenv, query_key, b_size)
+                return None
         except OSError:
             pass
 
@@ -142,6 +143,7 @@ class Downloader(object):
             print("All sequences were downloaded correctly. Good!")
             if self.gui == 0:
                 sys.exit("Program finished without error.")
+
         else:
             print("%s sequences did not download correctly (or at all). "
                   "Retrying..." %(numb_missing))
