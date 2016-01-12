@@ -81,8 +81,6 @@ class Downloader(object):
 
         else:
             outfile = open(self.outfile, 'a')
-            if self.gui == 1:
-                self.max_seq.emit(count)
             if Bsize > count:
                 Bsize = count
             for start in range(0, count, Bsize):
@@ -94,6 +92,7 @@ class Downloader(object):
                                                             count))
 
                 if self.gui == 1:
+                    self.max_seq.emit(count)
                     self.prog_data.emit(end)
 
                 if Run == 1:
