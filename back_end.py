@@ -131,13 +131,13 @@ class Downloader(object):
         Checks for missing sequences.
         """
         print("Checking for sequences that did not download... Please wait.")
-        ver_IDs = self.error_finder(self.outfile)
-        missing_IDs = []
+        ver_ids = self.error_finder(self.outfile)
+        missing_ids = []
         for i in IDs:
-            if i not in ver_IDs:
-                missing_IDs.append(i)
-        numb_missing = len(missing_IDs)
-        IDs = missing_IDs # Improve performance on subsequent runs
+            if i not in ver_ids:
+                missing_ids.append(i)
+        numb_missing = len(missing_ids)
+        IDs = missing_ids # Improve performance on subsequent runs
         if numb_missing == 0:
             print("All sequences were downloaded correctly. Good!")
             if self.gui == 0:
