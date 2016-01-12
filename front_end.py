@@ -186,7 +186,7 @@ class MainWindow(QtWidgets.QMainWindow):
             Get_data.max_seq.connect(self.progbar.setMaximum)
             Get_data.prog_data.connect(self.progbar.setValue)
             Get_data.no_match.connect(lambda msg : setattr(self, 'message', msg))
-            Get_data.runEverything()
+            Get_data.run_everything()
 
 
             if self.DlFinished(self.message) == 2097152:
