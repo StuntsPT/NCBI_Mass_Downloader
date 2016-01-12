@@ -76,7 +76,7 @@ class Downloader(object):
         try:
             if Run == 1 and stat(self.outfile).st_size != 0:
                 self.ReDownloader(IDs, webenv, query_key, Bsize)
-        except IOError or OSError:
+        except OSError:
             pass
 
         else:
