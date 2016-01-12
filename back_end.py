@@ -34,12 +34,12 @@ class Downloader(object):
         super(Downloader, self).__init__()
 
 
-    def ncbi_search(self):
+    def ncbi_search(self, database, term):
         """
         Submit search to NCBI and return the records.
         """
-        handle = Entrez.esearch(db=self.database, term=self.term,
-                                usehistory="y", retmax=100000000)
+        handle = Entrez.esearch(db=database, term=term, usehistory="y",
+                                retmax=100000000)
         record = Entrez.read(handle)
         handle.close()
 
@@ -131,7 +131,7 @@ class Downloader(object):
         Checks for missing sequences.
         """
         print("Checking for sequences that did not download... Please wait.")
-        ver_IDs = self.Error_finder(self.outfile)
+        ver_IDs = self.error_finder(self.outfile)
         missing_IDs = []
         for i in IDs:
             if i not in ver_IDs:
@@ -148,7 +148,7 @@ class Downloader(object):
             self.main_organizer(numb_missing, IDs, webenv, query_key, b_size, 2)
 
 
-    def Error_finder(self, target_file):
+    def error_finder(self, target_file):
         """
         Looks for errors in the output fasta and retruns a list of necessary retries.
         """
@@ -205,7 +205,7 @@ class Downloader(object):
         batch_size = 3000
         Entrez.email = self.email
 
-        rec = self.ncbi_search()
+        rec = self.ncbi_search(self.database, self.term)
         try:
             count, IDs, webenv, query_key = self.record_processor(rec)
         except TypeError:
