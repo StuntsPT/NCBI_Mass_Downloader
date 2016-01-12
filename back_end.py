@@ -67,73 +67,68 @@ class Downloader(object):
         writes the sequences into the outfile.
         """
         try:
-            a = open(self.outfile, 'r')
-            a.close()
+            if Run == 1 and stat(self.outfile).st_size != 0:
+                self.ReDownloader(IDs, webenv, query_key, Bsize)
         except IOError:
-            a = open(self.outfile, 'w')
-            a.close()
-        if Run == 1 and stat(self.outfile).st_size != 0:
-            self.ReDownloader(IDs, webenv, query_key, Bsize)
+            pass
+
+        if count == 0 and self.gui == 0:
+            sys.exit("Your serch query returned no results!")
+
+        elif count == 0:
+            self.no_match.emit("Your serch query returned no results!")
+            return None
 
         else:
-            if count == 0 and self.gui == 0:
-                sys.exit("Your serch query returned no results!")
-            elif count == 0:
-                self.no_match.emit("Your serch query returned no results!")
-                return None
+            outfile = open(self.outfile, 'a')
+            if self.gui == 1:
+                self.max_seq.emit(count)
+            if Bsize > count:
+                Bsize = count
+            for start in range(0, count, Bsize):
+                if start + Bsize < count:
+                    end = start + Bsize
+                else:
+                    end = count
+                print("Downloading record %i to %i of %i" %(start+1, end,
+                                                            count))
 
-            else:
-                outfile = open(self.outfile, 'a')
                 if self.gui == 1:
-                    self.max_seq.emit(count)
-                if Bsize > count:
-                    Bsize = count
-                for start in range(0, count, Bsize):
-                    if start + Bsize < count:
-                        end = start + Bsize
-                    else:
-                        end = count
-                    print("Downloading record %i to %i of %i" %(start+1, end,
-                                                                count))
+                    self.prog_data.emit(end)
 
-                    if self.gui == 1:
-                        self.prog_data.emit(end)
+                if Run == 1:
+                    fetch_func = self.fetch_by_history
+                    fetch_args = start, Bsize, webenv, query_key
+                else:
+                    fetch_func = self.fetch_by_id
+                    fetch_args = IDs, Bsize
+                # Make sure that the program carries on despite server "hammering" errors.
+                attempt = 0
+                while True:
+                    try:
+                        data = fetch_func(*fetch_args)
+                        if data.startswith("<?"):
+                            raise ValueError("NCBI server error.")
+                        else:
+                            data = data.replace("\n\n","\n")
+                            break
+                    except ValueError:
+                        if attempt < 5:
+                            print("NCBI is retuning XML instead of sequence"
+                                  " data. Trying the same chunk again in "
+                                  "8\'\'.")
+                            attempt += 1
+                            sleep(8)
+                            pass
+                        else:
+                            print("Too many errors in a row. Let's make a "
+                                  "larger 20\'\' pause and try again.")
+                            attempt = 0
+                            sleep(20)
+                            pass
+                outfile.write(data)
 
-                    if Run == 1:
-                        fetch_func = self.fetch_by_history
-                        fetch_args = start, Bsize, webenv, query_key
-                    else:
-                        fetch_func = self.fetch_by_id
-                        fetch_args = IDs, Bsize
-                    # Make sure that the program carries on despite server "hammering" errors.
-                    attempt = 0
-                    while True:
-                        try:
-                            data = fetch_func(*fetch_args)
-                            if data.startswith("<?"):
-                                raise ValueError("NCBI server error.")
-                            else:
-                                data = data.replace("\n\n","\n")
-                                break
-                        except ValueError:
-                            if attempt < 5:
-                                print("NCBI is retuning XML instead of sequence"
-                                      " data. Trying the same chunk again in "
-                                      "8\'\'.")
-                                attempt += 1
-                                sleep(8)
-                                pass
-                            else:
-                                print("Too many errors in a row. Let's make a "
-                                      "larger 20\'\' pause and try again.")
-                                attempt = 0
-                                sleep(20)
-                                pass
-                    outfile.write(data)
-        try:
-            outfile.close()
-        except:
-            pass
+        outfile.close()
         self.ReDownloader(IDs, webenv, query_key, Bsize)
 
 
