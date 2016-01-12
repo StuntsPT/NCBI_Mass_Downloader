@@ -37,7 +37,7 @@ def main():
     else:
         from back_end import Downloader
         dl = Downloader(sys.argv[1],sys.argv[3],sys.argv[2],sys.argv[4], 0)
-        dl.runEverything()
+        dl.run_everything()
 
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, kill_switch)

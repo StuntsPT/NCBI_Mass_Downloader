@@ -75,10 +75,9 @@ class Downloader(object):
         """
         try:
             if Run == 1 and stat(self.outfile).st_size != 0:
-                self.ReDownloader(IDs, webenv, query_key, Bsize)
+                self.re_downloader(IDs, webenv, query_key, Bsize)
         except OSError:
             pass
-
 
         outfile = open(self.outfile, 'a')
         if Bsize > count:
@@ -126,10 +125,10 @@ class Downloader(object):
             outfile.write(data)
 
         outfile.close()
-        self.ReDownloader(IDs, webenv, query_key, Bsize)
+        self.re_downloader(IDs, webenv, query_key, Bsize)
 
 
-    def ReDownloader(self, IDs, webenv, query_key, Bsize):
+    def re_downloader(self, IDs, webenv, query_key, Bsize):
         """
         Checks for missing sequences.
         """
@@ -202,7 +201,7 @@ class Downloader(object):
         return data
 
 
-    def runEverything(self):
+    def run_everything(self):
         """
         Run the functions in order.
         """
@@ -223,7 +222,7 @@ def main():
     program.
     """
     dl = Downloader(sys.argv[1], sys.argv[3], sys.argv[2], sys.argv[4], 0)
-    dl.runEverything()
+    dl.run_everything()
 
 
 if __name__ == '__main__':
