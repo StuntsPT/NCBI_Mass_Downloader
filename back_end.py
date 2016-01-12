@@ -111,7 +111,7 @@ class Downloader(object):
                         else:
                             data = data.replace("\n\n","\n")
                             break
-                    except ValueError:
+                    except:
                         if attempt < 5:
                             print("NCBI is retuning XML instead of sequence"
                                   " data. Trying the same chunk again in "
