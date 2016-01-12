@@ -58,6 +58,13 @@ class Downloader(object):
 
         assert count == len(IDs)
 
+        if count == 0 and self.gui == 0:
+            sys.exit("Your serch query returned no results!")
+
+        elif count == 0 or count == None:
+            self.no_match.emit("Your serch query returned no results!")
+            return None
+
         return count, IDs, webenv, query_key
 
 
@@ -69,15 +76,8 @@ class Downloader(object):
         try:
             if Run == 1 and stat(self.outfile).st_size != 0:
                 self.ReDownloader(IDs, webenv, query_key, Bsize)
-        except IOError:
+        except IOError or OSError:
             pass
-
-        if count == 0 and self.gui == 0:
-            sys.exit("Your serch query returned no results!")
-
-        elif count == 0:
-            self.no_match.emit("Your serch query returned no results!")
-            return None
 
         else:
             outfile = open(self.outfile, 'a')
@@ -212,7 +212,10 @@ class Downloader(object):
         Entrez.email = self.email
 
         rec = self.NCBI_search()
-        count, IDs, webenv, query_key = self.Record_processor(rec)
+        try:
+            count, IDs, webenv, query_key = self.Record_processor(rec)
+        except TypeError:
+            return None
         self.main_organizer(count, IDs, webenv, query_key, batch_size, 1)
 
 
