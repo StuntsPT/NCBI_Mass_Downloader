@@ -34,7 +34,7 @@ class Downloader(object):
         super(Downloader, self).__init__()
 
 
-    def NCBI_search(self):
+    def ncbi_search(self):
         """
         Submit search to NCBI and return the records.
         """
@@ -46,7 +46,7 @@ class Downloader(object):
         return record
 
 
-    def Record_processor(self, record):
+    def record_processor(self, record):
         """
         Splits the record returned by Entrez into sparate variables and returns
         them.
@@ -61,7 +61,7 @@ class Downloader(object):
         if count == 0 and self.gui == 0:
             sys.exit("Your serch query returned no results!")
 
-        elif count == 0 or count == None:
+        elif count == 0:
             self.no_match.emit("Your serch query returned no results!")
             return None
 
@@ -107,7 +107,7 @@ class Downloader(object):
                     if data.startswith("<?"):
                         raise ValueError("NCBI server error.")
                     else:
-                        data = data.replace("\n\n","\n")
+                        data = data.replace("\n\n", "\n")
                         break
                 except:
                     if attempt < 5:
@@ -115,13 +115,11 @@ class Downloader(object):
                               "Trying the same chunk again in 8\'\'.")
                         attempt += 1
                         sleep(8)
-                        pass
                     else:
                         print("Too many errors in a row. Let's make a larger "
                               "20\'\' pause and try again.")
                         attempt = 0
                         sleep(20)
-                        pass
             outfile.write(data)
 
         outfile.close()
@@ -147,8 +145,7 @@ class Downloader(object):
         else:
             print("%s sequences did not download correctly (or at all). "
                   "Retrying..." %(numb_missing))
-            self.main_organizer(numb_missing, IDs, webenv, query_key, Bsize,
-                                    2)
+            self.main_organizer(numb_missing, IDs, webenv, query_key, Bsize, 2)
 
 
     def Error_finder(self, target_file):
@@ -208,9 +205,9 @@ class Downloader(object):
         batch_size = 3000
         Entrez.email = self.email
 
-        rec = self.NCBI_search()
+        rec = self.ncbi_search()
         try:
-            count, IDs, webenv, query_key = self.Record_processor(rec)
+            count, IDs, webenv, query_key = self.record_processor(rec)
         except TypeError:
             return None
         self.main_organizer(count, IDs, webenv, query_key, batch_size, 1)
