@@ -107,7 +107,7 @@ from py3k import _binary_to_string_handle, _as_bytes
 __docformat__ = "restructuredtext en"
 
 email = None
-tool = "biopython"
+tool = "ncbi_mass_sequence_downloader"
 
 
 # XXX retmode?
