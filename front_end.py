@@ -32,15 +32,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.initUI()
 
     def initUI(self):
-        ##Create widgets
-        #Download button
+        ## Create widgets
+        # Download button
         self.dlbtn = QtWidgets.QPushButton("Download!", self)
         self.dlbtn.setToolTip('Click to start downloading...')
         self.dlbtn.clicked.connect(self.statusChange)
         self.dlbtn.clicked.connect(self.runOnClick)
         self.dlbtn.resize(self.dlbtn.sizeHint())
 
-        #Quit button
+        # Quit button
         self.qbtn = QtWidgets.QPushButton("Quit", self)
         self.qbtn.setToolTip('Click exit the program...')
         self.qbtn.clicked.connect(QtCore.QCoreApplication.instance().quit)
@@ -54,24 +54,24 @@ class MainWindow(QtWidgets.QMainWindow):
         self.canbtn.resize(self.canbtn.sizeHint())
         self.canbtn.setEnabled(False)
 
-        #Progress bar
+        # Progress bar
         self.progbar = QtWidgets.QProgressBar(self)
 
-        #Status bar
+        # Status bar
         self.statusBar().showMessage('Ready')
 
-        #Title lable
+        # Title lable
         self.title = QtWidgets.QLabel(self)
         self.title.setText("NCBI Mass Sequence Downloader")
         self.title.setFont(QtGui.QFont("Sans", 16, QtGui.QFont.Bold, True))
 
-        #Email line edit and respective label
+        # Email line edit and respective label
         self.email_line = QtWidgets.QLineEdit(self)
         self.email_line.setFixedWidth(220)
         self.email_label = QtWidgets.QLabel(self)
         self.email_label.setText("Email address:")
 
-        #Databases to search and respective label
+        # Databases to search and respective label
         self.databases = QtWidgets.QComboBox(self)
         self.databases.addItem("nucleotide")
         self.databases.addItem("nuccore")
@@ -83,13 +83,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.databases_label = QtWidgets.QLabel(self)
         self.databases_label.setText("Database to search:")
 
-        #Search query line and respective label
+        # Search query line and respective label
         self.search_query = QtWidgets.QLineEdit(self)
         self.search_query.setFixedWidth(300)
         self.search_query_label = QtWidgets.QLabel(self)
         self.search_query_label.setText("Search Query:")
 
-        #File management
+        # File management
         self.save_file_label = QtWidgets.QLabel(self)
         self.save_file_label.setText("File Location:")
 
@@ -101,30 +101,30 @@ class MainWindow(QtWidgets.QMainWindow):
         self.save_file_button.setToolTip('Click to select file location...')
         self.save_file_button.clicked.connect(self.fileHandle)
 
-        #self.savefile = QtGui.QFileDialog.getSaveFileName(self, "Save to file...", "", ".fasta")
+        # self.savefile = QtGui.QFileDialog.getSaveFileName(self, "Save to file...", "", ".fasta")
 
-        #Container widget
+        # Container widget
         self.main_widget = QtWidgets.QWidget(self)
 
-        ##Set layout
-        #Containers
+        ## Set layout
+        # Containers
         self.main_layout = QtWidgets.QVBoxLayout(self.main_widget)
         self.main_layout.sizeConstraint = QtWidgets.QLayout.SetDefaultConstraint
 
         self.main_widget.setLayout(self.main_layout)
         self.setCentralWidget(self.main_widget)
 
-        #Box for progress bar
+        # Box for progress bar
         self.progressBox = QtWidgets.QHBoxLayout()
         self.progressBox.addWidget(self.progbar)
 
-        #Box for search query
+        # Box for search query
         self.queryBox = QtWidgets.QHBoxLayout()
         self.queryBox.addWidget(self.search_query_label)
         self.queryBox.addWidget(self.search_query)
         self.queryBox.addStretch(1)
 
-        #Box for email and database
+        # Box for email and database
         self.email_database_box = QtWidgets.QHBoxLayout()
         self.email_database_box.addWidget(self.email_label)
         self.email_database_box.addWidget(self.email_line)
@@ -134,26 +134,26 @@ class MainWindow(QtWidgets.QMainWindow):
         self.email_database_box.addWidget(self.databases_label)
         self.email_database_box.addWidget(self.databases)
 
-        #Box for file management
+        # Box for file management
         self.file_box = QtWidgets.QHBoxLayout()
         self.file_box.addWidget(self.save_file_label)
         self.file_box.addWidget(self.save_file_line)
         self.file_box.addWidget(self.save_file_button)
         self.file_box.addWidget(self.canbtn)
 
-        #Box for Title
+        # Box for Title
         self.titlebox = QtWidgets.QHBoxLayout()
         self.titlebox.addStretch(1)
         self.titlebox.addWidget(self.title)
         self.titlebox.addStretch(1)
 
-        #Box for bottom buttons
+        # Box for bottom buttons
         self.bottomBox = QtWidgets.QHBoxLayout()
         self.bottomBox.addStretch(1)
         self.bottomBox.addWidget(self.dlbtn)
         self.bottomBox.addWidget(self.qbtn)
 
-        #Vertical stack
+        # Vertical stack
         self.main_layout.addLayout(self.titlebox)
         self.main_layout.addStretch(1)
         self.main_layout.addLayout(self.email_database_box)
@@ -164,11 +164,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.main_layout.addLayout(self.bottomBox)
 
 
-        #MainWindow proprieties
+        # MainWindow proprieties
         self.setWindowTitle('NCBI mass downloader')
         self.setWindowIcon(QtGui.QIcon('assets/Icon.png'))
 
-        #Draw it!
+        # Draw it!
         self.show()
 
     def statusChange(self):
@@ -190,7 +190,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.save_file_line.setText(self.savefile)
 
     def runOnClick(self):
-        #str() method used for python2 compatibility (python2 does not handle QString natively)
+        # str() method used for python2 compatibility (python2 does not handle QString natively)
         self.email_address = str(self.email_line.displayText())
         self.database_to_search = str(self.databases.currentText())
         self.search_term = str(self.search_query.displayText())
@@ -214,13 +214,13 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.statusChange()
 
     def cleanForms(self):
-        #Clear forms for making another download
+        # Clear forms for making another download
         self.search_query.setText("")
         self.save_file_line.setText("")
         self.progbar.setValue(0)
 
     def DlFinished(self, message):
-        #Create message box for finished download
+        # Create message box for finished download
         self.question = QtWidgets.QMessageBox(self)
         self.question.setIcon(QtWidgets.QMessageBox.Question)
         self.question.setText(message)
@@ -232,7 +232,7 @@ class MainWindow(QtWidgets.QMainWindow):
         return reply
 
     def sanityCheck(self):
-        #Check if the variables to be sent to the back end make sense
+        # Check if the variables to be sent to the back end make sense
         if re.match("[a-zA-Z0-9_.]*@\w*\..*$", self.email_address) == None:
             self.fail = QtWidgets.QMessageBox.warning(self, "Problem with email address", "Email address does not seem valid. Is there a typo? Please correct it.", QtWidgets.QMessageBox.Ok)
             return 0
@@ -247,7 +247,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
 class DownloaderGui(Downloader, QtCore.QThread, QtCore.QObject):
-    #Just add PyQt 'magic' to Downloader() and create emmiters in constructor.
+    # Just add PyQt 'magic' to Downloader() and create emmiters in constructor.
     prog_data = QtCore.pyqtSignal(int)
     max_seq = QtCore.pyqtSignal(int)
     no_match = QtCore.pyqtSignal(str)
