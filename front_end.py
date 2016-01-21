@@ -95,6 +95,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.save_file_line = QtWidgets.QLineEdit(self)
         self.save_file_line.setFixedWidth(300)
+        self.save_file_line.setEnabled(False)
 
         self.save_file_button = QtWidgets.QPushButton("Save as...", self)
         self.save_file_button.resize(self.dlbtn.sizeHint())
