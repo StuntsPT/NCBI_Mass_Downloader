@@ -174,8 +174,16 @@ class MainWindow(QtWidgets.QMainWindow):
     def statusChange(self):
         if self.statusBar().currentMessage() == "Ready":
             self.statusBar().showMessage("Downloading...")
+            self.canbtn.setEnabled(True)
+            self.dlbtn.setEnabled(False)
+            self.qbtn.setEnabled(False)
+            self.save_file_button.setEnabled(False)
         elif self.statusBar().currentMessage() == "Downloading...":
             self.statusBar().showMessage("Ready")
+            self.canbtn.setEnabled(False)
+            self.dlbtn.setEnabled(True)
+            self.qbtn.setEnabled(True)
+            self.save_file_button.setEnabled(True)
 
     def fileHandle(self):
         self.savefile = QtWidgets.QFileDialog.getSaveFileName(self, "Save to file...", "", "Fasta Files (*.fasta);;All Files (*)")[0]
