@@ -22,6 +22,7 @@ import os
 from PyQt5 import QtGui, QtCore, QtWidgets
 
 from back_end import Downloader
+from NCBI_downloader import kill_switch
 
 class MainWindow(QtWidgets.QMainWindow):
 
@@ -33,17 +34,25 @@ class MainWindow(QtWidgets.QMainWindow):
     def initUI(self):
         ##Create widgets
         #Download button
-        dlbtn = QtWidgets.QPushButton("Download!", self)
-        dlbtn.setToolTip('Click to start downloading...')
-        dlbtn.clicked.connect(self.statusChange)
-        dlbtn.clicked.connect(self.runOnClick)
-        dlbtn.resize(dlbtn.sizeHint())
+        self.dlbtn = QtWidgets.QPushButton("Download!", self)
+        self.dlbtn.setToolTip('Click to start downloading...')
+        self.dlbtn.clicked.connect(self.statusChange)
+        self.dlbtn.clicked.connect(self.runOnClick)
+        self.dlbtn.resize(self.dlbtn.sizeHint())
 
         #Quit button
-        qbtn = QtWidgets.QPushButton("Quit", self)
-        qbtn.setToolTip('Click exit the program...')
-        qbtn.clicked.connect(QtCore.QCoreApplication.instance().quit)
-        qbtn.resize(qbtn.sizeHint())
+        self.qbtn = QtWidgets.QPushButton("Quit", self)
+        self.qbtn.setToolTip('Click exit the program...')
+        self.qbtn.clicked.connect(QtCore.QCoreApplication.instance().quit)
+        self.qbtn.resize(self.qbtn.sizeHint())
+
+        # Cancel button
+        self.canbtn = QtWidgets.QPushButton("Stop", self)
+        self.canbtn.setToolTip('Stop the download.')
+        self.canbtn.setIcon(QtGui.QIcon("assets/stop.png"))
+        self.canbtn.clicked.connect(kill_switch)
+        self.canbtn.resize(self.canbtn.sizeHint())
+        self.canbtn.setEnabled(False)
 
         #Progress bar
         self.progbar = QtWidgets.QProgressBar(self)
@@ -87,8 +96,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.save_file_line = QtWidgets.QLineEdit(self)
         self.save_file_line.setFixedWidth(300)
 
-        self.save_file_button = QtWidgets.QPushButton("Find...", self)
-        self.save_file_button.resize(dlbtn.sizeHint())
+        self.save_file_button = QtWidgets.QPushButton("Save as...", self)
+        self.save_file_button.resize(self.dlbtn.sizeHint())
         self.save_file_button.setToolTip('Click to select file location...')
         self.save_file_button.clicked.connect(self.fileHandle)
 
@@ -130,6 +139,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.file_box.addWidget(self.save_file_label)
         self.file_box.addWidget(self.save_file_line)
         self.file_box.addWidget(self.save_file_button)
+        self.file_box.addWidget(self.canbtn)
 
         #Box for Title
         self.titlebox = QtWidgets.QHBoxLayout()
@@ -140,8 +150,8 @@ class MainWindow(QtWidgets.QMainWindow):
         #Box for bottom buttons
         self.bottomBox = QtWidgets.QHBoxLayout()
         self.bottomBox.addStretch(1)
-        self.bottomBox.addWidget(dlbtn)
-        self.bottomBox.addWidget(qbtn)
+        self.bottomBox.addWidget(self.dlbtn)
+        self.bottomBox.addWidget(self.qbtn)
 
         #Vertical stack
         self.main_layout.addLayout(self.titlebox)
