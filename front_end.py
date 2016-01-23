@@ -50,7 +50,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.canbtn = QtWidgets.QPushButton("Stop", self)
         self.canbtn.setToolTip('Stop the download.')
         self.canbtn.setIcon(QtGui.QIcon("assets/stop.png"))
-        self.canbtn.clicked.connect(kill_switch)
+        self.canbtn.clicked.connect(self.Get_data.kill_switch)
         self.canbtn.resize(self.canbtn.sizeHint())
         self.canbtn.setEnabled(False)
 
@@ -104,6 +104,13 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # self.savefile = QtGui.QFileDialog.getSaveFileName(self, "Save to file...", "", ".fasta")
 
+        ## Detailed messages widget and label
+        #self.details = QtWidgets.QPlainTextEdit(self)
+        #self.details.setFixedWidth(550)
+        #self.details.setReadOnly(True)
+        #self.details_label = QtWidgets.QLabel(self)
+        #self.details_label.setText("Progress details:")
+
         # Container widget
         self.main_widget = QtWidgets.QWidget(self)
 
@@ -154,6 +161,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.bottomBox.addWidget(self.dlbtn)
         self.bottomBox.addWidget(self.qbtn)
 
+        ## Box for detailed progress label
+        #self.detail_box1 = QtWidgets.QHBoxLayout()
+        #self.detail_box1.addWidget(self.details_label)
+
+        ## Box for detailed progress label
+        #self.detail_box2 = QtWidgets.QHBoxLayout()
+        #self.detail_box2.addWidget(self.details)
+
+
         # Vertical stack
         self.main_layout.addLayout(self.titlebox)
         self.main_layout.addStretch(1)
@@ -163,7 +179,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.main_layout.addStretch(1)
         self.main_layout.addLayout(self.progressBox)
         self.main_layout.addLayout(self.bottomBox)
-
+        #self.main_layout.addLayout(self.detail_box1)
+        #self.main_layout.addLayout(self.detail_box2)
 
         # MainWindow proprieties
         self.setWindowTitle('NCBI mass downloader')
@@ -201,24 +218,36 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.sanityCheck() == 1:
 
             self.message = "Download finished sucessfully!"
-            Get_data = DownloaderGui(self.email_address, self.database_to_search, self.search_term, self.file_to_handle, 1)
-            Get_data.max_seq.connect(self.progbar.setMaximum)
-            Get_data.prog_data.connect(self.progbar.setValue)
-            Get_data.no_match.connect(lambda msg : setattr(self, 'message', msg))
-            Get_data.run_everything()
+            self.Get_data = DownloaderGui(self.email_address,
+                                     self.database_to_search,
+                                     self.search_term,
+                                     self.file_to_handle,
+                                     1)
+            self.work_thread = QtCore.QThread()
+            self.Get_data.max_seq.connect(self.progbar.setMaximum)
+            self.Get_data.prog_data.connect(self.progbar.setValue)
+            self.Get_data.no_match.connect(lambda msg: setattr(self, 'message', msg))
+            self.Get_data.finished.connect(self.what_next)
+            self.Get_data.moveToThread(self.work_thread)
+            #Get_data.feedback.connect(self.details.append)
+            #self.Get_data.run_everything()
+            self.work_thread.started.connect(self.Get_data.run_everything)
+            self.work_thread.start()
 
 
-            if self.DlFinished(self.message) == 2097152:
-                self.close()
-            else:
-                self.cleanForms()
-                self.statusChange()
+    def what_next():
+        if self.DlFinished(self.message) == 2097152: #TODO - create the msgbox only when the thread is finished (it shoud emit a signal)
+            self.close()
+        else:
+            self.cleanForms()
+            self.statusChange()
 
     def cleanForms(self):
         # Clear forms for making another download
         self.search_query.setText("")
         self.save_file_line.setText("")
         self.progbar.setValue(0)
+        #self.details.setText("")
 
     def DlFinished(self, message):
         # Create message box for finished download
@@ -252,6 +281,13 @@ class DownloaderGui(Downloader, QtCore.QThread, QtCore.QObject):
     prog_data = QtCore.pyqtSignal(int)
     max_seq = QtCore.pyqtSignal(int)
     no_match = QtCore.pyqtSignal(str)
+    finished = QtCore.pyqtSignal()
+    #feedback = QtCore.pyqtSignal(str)
+
+
+    def __init__(self, email, database, term, outfile, gui):
+        # Add threading!
+        Downloader.__init__(self, email, database, term, outfile, gui)
 
 
 def main():
