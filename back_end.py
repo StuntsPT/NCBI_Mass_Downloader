@@ -86,72 +86,78 @@ class Downloader(object):
         if b_size > count:
             b_size = count
         for start in range(0, count, b_size):
-            if start + b_size < count:
-                end = start + b_size
-            else:
-                end = count
-            print("Downloading record %i to %i of %i" %(start+1, end, count))
+            if self.terminated is False:
+                if start + b_size < count:
+                    end = start + b_size
+                else:
+                    end = count
+                print("Downloading record %i to %i of %i" %(start+1, end, count))
 
-            if self.gui == 1:
-                self.max_seq.emit(count)
-                self.prog_data.emit(end)
+                if self.gui == 1:
+                    self.max_seq.emit(count)
+                    self.prog_data.emit(end)
 
-            if Run == 1:
-                fetch_func = self.fetch_by_history
-                fetch_args = start, b_size, webenv, query_key
-            else:
-                fetch_func = self.fetch_by_id
-                fetch_args = IDs, b_size
-            # Make sure that the program carries on despite server "hammering" errors.
-            attempt = 0
-            while not self.terminated:
-                try:
-                    data = fetch_func(*fetch_args)
-                    if data.startswith("<?"):
-                        raise ValueError("NCBI server error.")
-                    else:
-                        data = data.replace("\n\n", "\n")
-                        break
-                except:
-                    if attempt < 5:
-                        print("NCBI is retuning XML instead of sequence data. "
-                              "Trying the same chunk again in 8\'\'.")
-                        attempt += 1
-                        sleep(8)
-                    else:
-                        print("Too many errors in a row. Let's make a larger "
-                              "20\'\' pause and try again.")
-                        attempt = 0
-                        sleep(20)
-            outfile.write(data)
+                if Run == 1:
+                    fetch_func = self.fetch_by_history
+                    fetch_args = start, b_size, webenv, query_key
+                else:
+                    fetch_func = self.fetch_by_id
+                    fetch_args = IDs, b_size
+                # Make sure that the program carries on despite server "hammering" errors.
+                attempt = 0
+                while self.terminated is False:
+                    try:
+                        data = fetch_func(*fetch_args)
+                        if data.startswith("<?"):
+                            raise ValueError("NCBI server error.")
+                        else:
+                            data = data.replace("\n\n", "\n")
+                            break
+                    except:
+                        if attempt < 5:
+                            print("NCBI is retuning XML instead of sequence data. "
+                                  "Trying the same chunk again in 8\'\'.")
+                            attempt += 1
+                            sleep(8)
+                        else:
+                            print("Too many errors in a row. Let's make a larger "
+                                  "20\'\' pause and try again.")
+                            attempt = 0
+                            sleep(20)
+                if self.terminated is False:
+                    outfile.write(data)
 
         outfile.close()
-        self.re_downloader(IDs, webenv, query_key, b_size)
+        if self.terminated is False:
+            self.re_downloader(IDs, webenv, query_key, b_size)
 
 
     def re_downloader(self, IDs, webenv, query_key, b_size):
         """
         Checks for missing sequences.
         """
-        print("Checking for sequences that did not download... Please wait.")
-        ver_ids = self.error_finder(self.outfile)
-        missing_ids = []
-        for i in IDs:
-            if i not in ver_ids:
-                missing_ids.append(i)
-        numb_missing = len(missing_ids)
-        IDs = missing_ids # Improve performance on subsequent runs
-        if numb_missing == 0:
-            print("All sequences were downloaded correctly. Good!")
-            if self.gui == 0:
-                sys.exit("Program finished without error.")
-            else:
-                self.finished.emit()
-
+        if self.terminated is True:
+            return
         else:
-            print("%s sequences did not download correctly (or at all). "
-                  "Retrying..." %(numb_missing))
-            self.main_organizer(numb_missing, IDs, webenv, query_key, b_size, 2)
+            print("Checking for sequences that did not download... Please wait.")
+            ver_ids = self.error_finder(self.outfile)
+            missing_ids = []
+            for i in IDs:
+                if i not in ver_ids:
+                    missing_ids.append(i)
+            numb_missing = len(missing_ids)
+            IDs = missing_ids # Improve performance on subsequent runs
+            if numb_missing == 0:
+                print("All sequences were downloaded correctly. Good!")
+                if self.gui == 0:
+                    sys.exit("Program finished without error.")
+                else:
+                    self.finished.emit("Download finished successfully!")
+
+            else:
+                print("%s sequences did not download correctly (or at all). "
+                      "Retrying..." %(numb_missing))
+                self.main_organizer(numb_missing, IDs, webenv, query_key, b_size, 2)
 
 
     def error_finder(self, target_file):

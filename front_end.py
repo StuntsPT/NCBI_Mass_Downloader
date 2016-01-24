@@ -42,7 +42,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Quit button
         self.qbtn = QtWidgets.QPushButton("Quit", self)
-        self.qbtn.setToolTip('Click exit the program...')
+        self.qbtn.setToolTip('Click to exit the program...')
         self.qbtn.clicked.connect(QtCore.QCoreApplication.instance().quit)
         self.qbtn.resize(self.qbtn.sizeHint())
 
@@ -217,7 +217,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if self.sanityCheck() == 1:
 
-            self.message = "Download finished sucessfully!"
+            #self.message = "Download finished sucessfully!"
             self.Get_data = DownloaderGui(self.email_address,
                                      self.database_to_search,
                                      self.search_term,
@@ -237,16 +237,18 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
     def stop_threads(self):
+        self.dl_message = "Download canceled."
         self.Get_data.terminated = True
-        #self.Get_data.soft_break()
         self.work_thread.terminate()
         self.work_thread.quit()
+        self.statusBar().showMessage("Canceling the download. The program may become irresponsive for a while.")
         self.work_thread.wait()
-        self.what_next()
+        self.statusBar().showMessage("Downloading...")
+        self.what_next(self.dl_message)
 
 
-    def what_next(self):
-        if self.DlFinished(self.message) == 2097152:
+    def what_next(self, dl_message):
+        if self.DlFinished(dl_message) == 2097152:
             self.close()
         else:
             self.cleanForms()
@@ -291,7 +293,7 @@ class DownloaderGui(Downloader, QtCore.QThread, QtCore.QObject):
     prog_data = QtCore.pyqtSignal(int)
     max_seq = QtCore.pyqtSignal(int)
     no_match = QtCore.pyqtSignal(str)
-    finished = QtCore.pyqtSignal()
+    finished = QtCore.pyqtSignal(str)
     #feedback = QtCore.pyqtSignal(str)
 
 
