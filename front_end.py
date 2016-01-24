@@ -50,7 +50,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.canbtn = QtWidgets.QPushButton("Stop", self)
         self.canbtn.setToolTip('Stop the download.')
         self.canbtn.setIcon(QtGui.QIcon("assets/stop.png"))
-        self.canbtn.clicked.connect(self.Get_data.kill_switch)
+        #self.canbtn.clicked.connect(self.Get_data.kill_switch)
         self.canbtn.resize(self.canbtn.sizeHint())
         self.canbtn.setEnabled(False)
 
@@ -232,11 +232,21 @@ class MainWindow(QtWidgets.QMainWindow):
             #Get_data.feedback.connect(self.details.append)
             #self.Get_data.run_everything()
             self.work_thread.started.connect(self.Get_data.run_everything)
+            self.canbtn.clicked.connect(self.stop_threads)
             self.work_thread.start()
 
 
-    def what_next():
-        if self.DlFinished(self.message) == 2097152: #TODO - create the msgbox only when the thread is finished (it shoud emit a signal)
+    def stop_threads(self):
+        self.Get_data.terminated = True
+        #self.Get_data.soft_break()
+        self.work_thread.terminate()
+        self.work_thread.quit()
+        self.work_thread.wait()
+        self.what_next()
+
+
+    def what_next(self):
+        if self.DlFinished(self.message) == 2097152:
             self.close()
         else:
             self.cleanForms()

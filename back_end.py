@@ -24,6 +24,7 @@ from time import sleep
 
 import Entrez
 
+
 class Downloader(object):
     def __init__(self, email, database, term, outfile, gui):
         self.email = email
@@ -31,6 +32,7 @@ class Downloader(object):
         self.term = term
         self.outfile = outfile
         self.gui = gui
+        self.terminated = False
         super(Downloader, self).__init__()
 
 
@@ -102,7 +104,7 @@ class Downloader(object):
                 fetch_args = IDs, b_size
             # Make sure that the program carries on despite server "hammering" errors.
             attempt = 0
-            while True:
+            while not self.terminated:
                 try:
                     data = fetch_func(*fetch_args)
                     if data.startswith("<?"):
@@ -143,6 +145,8 @@ class Downloader(object):
             print("All sequences were downloaded correctly. Good!")
             if self.gui == 0:
                 sys.exit("Program finished without error.")
+            else:
+                self.finished.emit()
 
         else:
             print("%s sequences did not download correctly (or at all). "
