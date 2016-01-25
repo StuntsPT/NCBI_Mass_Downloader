@@ -251,7 +251,9 @@ class MainWindow(QtWidgets.QMainWindow):
         return reply
 
     def sanityCheck(self):
-        # Check if the variables to be sent to the back end make sense
+        """
+        Check if the variables to be sent to the back end make sense
+        """
         if re.match("[a-zA-Z0-9_.]*@\w*\..*$", self.email_address) == None:
             self.fail = QtWidgets.QMessageBox.warning(self, "Problem with email address", "Email address does not seem valid. Is there a typo? Please correct it.", QtWidgets.QMessageBox.Ok)
             return 0
