@@ -77,7 +77,7 @@ class Downloader(object):
         """
         try:
             if Run == 1 and stat(self.outfile).st_size != 0:
-                gui_end = self.re_downloader(IDs, webenv, query_key, b_size)
+                self.re_downloader(IDs, webenv, query_key, b_size)
                 return None
         except OSError:
             pass
