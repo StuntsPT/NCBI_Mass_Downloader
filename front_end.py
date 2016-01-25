@@ -265,7 +265,7 @@ class MainWindow(QtWidgets.QMainWindow):
             return 1
 
 
-class DownloaderGui(Downloader, QtCore.QThread, QtCore.QObject):
+class DownloaderGui(Downloader, QtCore.QObject):
     # Just add PyQt 'magic' to Downloader() and create emmiters in constructor.
     prog_data = QtCore.pyqtSignal(int)
     max_seq = QtCore.pyqtSignal(int)
