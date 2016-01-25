@@ -168,6 +168,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # Draw it!
         self.show()
 
+
     def statusChange(self):
         if self.statusBar().currentMessage() == "Ready":
             self.statusBar().showMessage("Downloading...")
@@ -182,9 +183,11 @@ class MainWindow(QtWidgets.QMainWindow):
             self.qbtn.setEnabled(True)
             self.save_file_button.setEnabled(True)
 
+
     def fileHandle(self):
         self.savefile = QtWidgets.QFileDialog.getSaveFileName(self, "Save to file...", "", "Fasta Files (*.fasta);;All Files (*)")[0]
         self.save_file_line.setText(self.savefile)
+
 
     def runOnClick(self):
         # str() method used for python2 compatibility (python2 does not handle QString natively)
@@ -232,14 +235,18 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
     def cleanForms(self):
-        # Clear forms for making another download
+        """
+        Clear forms for making another download
+        """
         self.search_query.setText("")
         self.save_file_line.setText("")
         self.progbar.setValue(0)
 
 
     def DlFinished(self, message):
-        # Create message box for finished download
+        """
+        Create message box for finished download
+        """
         self.question = QtWidgets.QMessageBox(self)
         self.question.setIcon(QtWidgets.QMessageBox.Question)
         self.question.setText(message)
