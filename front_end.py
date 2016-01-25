@@ -22,7 +22,7 @@ import os
 from PyQt5 import QtGui, QtCore, QtWidgets
 
 from back_end import Downloader
-from NCBI_downloader import kill_switch
+
 
 class MainWindow(QtWidgets.QMainWindow):
 
@@ -197,10 +197,10 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.sanityCheck() == 1:
 
             self.Get_data = DownloaderGui(self.email_address,
-                                     self.database_to_search,
-                                     self.search_term,
-                                     self.file_to_handle,
-                                     1)
+                                          self.database_to_search,
+                                          self.search_term,
+                                          self.file_to_handle,
+                                          1)
             self.work_thread = QtCore.QThread()
             self.Get_data.max_seq.connect(self.progbar.setMaximum)
             self.Get_data.prog_data.connect(self.progbar.setValue)
