@@ -40,12 +40,12 @@ class Downloader(object):
         """
         Submit search to NCBI and return the records.
         """
-        handle = Entrez.esearch(db=database, term=term, usehistory="y",
-                                retmax=100000000)
-        record = Entrez.read(handle)
-        handle.close()
+        self.handle = Entrez.esearch(db=database, term=term, usehistory="y",
+                                     retmax=100000000)
+        self.record = Entrez.read(handle)
+        self.handle.close()
 
-        return record
+        return self.record
 
 
     def record_processor(self, record):
