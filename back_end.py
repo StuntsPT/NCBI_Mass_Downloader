@@ -210,19 +210,47 @@ class Downloader(object):
         return data
 
 
+    def translate_genome(self, gilist):
+        """
+        Translates genome query IDs into a nucleotide query IDs, since NCBI has
+        deprecated the use of the "genome" database, and the old genome IDs.
+        http://www.ncbi.nlm.nih.gov/books/NBK25499/
+        """
+        import urllib
+        from re import search
+        nuc_gi_list = []
+        query_url = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/" + \
+                    "elink.fcgi?dbfrom=genome&db=nucleotide&id="
+        for genome_id in gilist:
+            tmplist = []
+            xml = urllib.request.urlopen(query_url + genome_id)
+            for content in xml:
+                if content.endswith(b"</Id>\n"):
+                    tmplist.append(re.search("<Id>.*</Id>", content.decode('utf-8')).group()[4:-5])
+            nuc_gi_list += tmplist[1:]
+
+        return nuc_gi_list
+
+
     def run_everything(self):
         """
         Run the functions in order.
         """
         batch_size = 3000
         Entrez.email = self.email
+        self.run = 1
 
         rec = self.ncbi_search(self.database, self.term)
         try:
             count, IDs, webenv, query_key = self.record_processor(rec)
         except TypeError:
             return None
-        self.main_organizer(count, IDs, webenv, query_key, batch_size, 1)
+        if self.database == "genome":
+            IDs = self.translate_genome(IDs)
+            count = len(IDs)
+            self.database = "nucleotide"
+            self.run = 2
+        self.main_organizer(count, IDs, webenv, query_key, batch_size, self.run)
 
 
 def main():
