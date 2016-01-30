@@ -42,11 +42,7 @@ class Downloader(object):
         """
         self.handle = Entrez.esearch(db=database, term=term, usehistory="y",
                                      retmax=100000000)
-<<<<<<< HEAD
         self.record = Entrez.read(self.handle)
-=======
-        self.record = Entrez.read(handle)
->>>>>>> ce256f52902be0ae33df4358eef20d8f97d0d2a6
         self.handle.close()
 
         return self.record
