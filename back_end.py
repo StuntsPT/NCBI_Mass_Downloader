@@ -257,7 +257,7 @@ def main():
     Main function. Defines how the arguments get passed to the rest of the
     program.
     """
-    dler = Downloader(sys.argv[1], sys.argv[3], sys.argv[2], sys.argv[4], 0)
+    dler = Downloader(sys.argv[2], sys.argv[1], sys.argv[3], 0)
     dler.run_everything()
 
 

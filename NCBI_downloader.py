@@ -36,7 +36,7 @@ def main():
 
     else:
         from back_end import Downloader
-        dler = Downloader(sys.argv[1], sys.argv[3], sys.argv[2], sys.argv[4], 0)
+        dler = Downloader(sys.argv[2], sys.argv[1], sys.argv[3], 0)
         dler.run_everything()
 
 if __name__ == '__main__':
