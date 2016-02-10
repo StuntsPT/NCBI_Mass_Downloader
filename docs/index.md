@@ -20,6 +20,7 @@ It will run on both python2 and python3.
 * [Testing](testing.md)
 * [Future plans](future.md)
 * [Limitations](limits.md)
+* [FAQ](faq.md)
 
 ## Bug reporting
 Found a br or would like a feature added? Or maybe drop some feedback?
