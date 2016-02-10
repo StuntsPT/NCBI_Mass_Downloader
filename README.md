@@ -1,7 +1,3 @@
-[![Documentation Status](https://readthedocs.org/projects/ncbi-mass-sequence-downloader/badge/?version=latest)](http://ncbi-mass-sequence-downloader.readthedocs.org/en/latest/?badge=latest)
-
--------
-
 # NCBI Mass Sequence Downloader
 
 
@@ -10,6 +6,8 @@ This program will download sequences *en masse* from several NCBI databases (at 
 After the downloading is finished, the program will check the resulting file for any missing sequences and continuously retry the download until all sequences are present in the local file.
 
 ## Documentation:
+[![Documentation Status](https://readthedocs.org/projects/ncbi-mass-sequence-downloader/badge/?version=latest)](http://ncbi-mass-sequence-downloader.readthedocs.org/en/latest/?badge=latest)
+
 The complete manual can be found on [readthedocs.org](http://ncbi-mass-sequence-downloader.readthedocs.org/en/latest/).
 
 ## Dependencies:
