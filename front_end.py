@@ -64,11 +64,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.title.setText("NCBI Mass Sequence Downloader")
         self.title.setFont(QtGui.QFont("Sans", 16, QtGui.QFont.Bold, True))
 
-        # Email line edit and respective label
-        self.email_line = QtWidgets.QLineEdit(self)
-        self.email_line.setFixedWidth(220)
-        self.email_label = QtWidgets.QLabel(self)
-        self.email_label.setText("Email address:")
+        # Help with queries
+        self.query_help_url = "http://www.ncbi.nlm.nih.gov/books/NBK3837/#_EntrezHelp_Entrez_Searching_Options_"
+        self.help_label = QtWidgets.QLabel(self)
+        self.help_label.setText("Click <a href=" + self.query_help_url + ">here</a> for help with the Query!")
+        self.help_label.setOpenExternalLinks(True)
 
         # Databases to search and respective label
         self.databases = QtWidgets.QComboBox(self)
@@ -122,15 +122,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.queryBox.addWidget(self.search_query)
         self.queryBox.addStretch(1)
 
-        # Box for email and database
-        self.email_database_box = QtWidgets.QHBoxLayout()
-        self.email_database_box.addWidget(self.email_label)
-        self.email_database_box.addWidget(self.email_line)
+        # Box for query help and database
+        self.query_database_box = QtWidgets.QHBoxLayout()
+        self.query_database_box.addWidget(self.help_label)
 
-        self.email_database_box.addStretch(1)
+        self.query_database_box.addStretch(1)
 
-        self.email_database_box.addWidget(self.databases_label)
-        self.email_database_box.addWidget(self.databases)
+        self.query_database_box.addWidget(self.databases_label)
+        self.query_database_box.addWidget(self.databases)
 
         # Box for file management
         self.file_box = QtWidgets.QHBoxLayout()
@@ -154,7 +153,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # Vertical stack
         self.main_layout.addLayout(self.titlebox)
         self.main_layout.addStretch(1)
-        self.main_layout.addLayout(self.email_database_box)
+        self.main_layout.addLayout(self.query_database_box)
         self.main_layout.addLayout(self.queryBox)
         self.main_layout.addLayout(self.file_box)
         self.main_layout.addStretch(1)
@@ -191,7 +190,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def runOnClick(self):
         # str() method used for python2 compatibility (python2 does not handle QString natively)
-        self.email_address = str(self.email_line.displayText())
         self.database_to_search = str(self.databases.currentText())
         self.search_term = str(self.search_query.displayText())
         self.file_to_handle = str(self.save_file_line.displayText())
@@ -199,8 +197,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if self.sanityCheck() == 1:
 
-            self.Get_data = DownloaderGui(self.email_address,
-                                          self.database_to_search,
+            self.Get_data = DownloaderGui(self.database_to_search,
                                           self.search_term,
                                           self.file_to_handle,
                                           1)
@@ -261,10 +258,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         Check if the variables to be sent to the back end make sense
         """
-        if re.match("[a-zA-Z0-9_.]*@\w*\..*$", self.email_address) == None:
-            self.fail = QtWidgets.QMessageBox.warning(self, "Problem with email address", "Email address does not seem valid. Is there a typo? Please correct it.", QtWidgets.QMessageBox.Ok)
-            return 0
-        elif len(self.search_term) < 3:
+        if len(self.search_term) < 3:
             self.fail = QtWidgets.QMessageBox.warning(self, "Problem with search query", "Your search query is too short. It should have at least 3 characters.", QtWidgets.QMessageBox.Ok)
             return 0
         elif (os.path.exists(os.path.dirname(self.file_to_handle)) == False) or (os.access(os.path.dirname(self.file_to_handle), os.W_OK) == False):
@@ -282,9 +276,9 @@ class DownloaderGui(Downloader, QtCore.QObject):
     finished = QtCore.pyqtSignal(str)
 
 
-    def __init__(self, email, database, term, outfile, gui):
+    def __init__(self, database, term, outfile, gui):
         # Add threading!
-        Downloader.__init__(self, email, database, term, outfile, gui)
+        Downloader.__init__(self, database, term, outfile, gui)
 
 
 def main():
