@@ -1,4 +1,4 @@
-## Usage:
+# Usage:
 To use the GUI version:
 
     python NCBI_downloader.py

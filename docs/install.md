@@ -1,4 +1,4 @@
-## Installation:
+# Installation:
 There are essentially three ways to install *NCBI Mass Sequence Downloader*:
 
 1. Get the [latest release](https://github.com/StuntsPT/NCBI_Mass_Downloader/releases/latest) binaries.
