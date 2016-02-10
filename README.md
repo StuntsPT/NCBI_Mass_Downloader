@@ -20,6 +20,7 @@ The complete manual can be found on [readthedocs.org](http://ncbi-mass-sequence-
 ## License:
 GPLv3
 
+Biopython files (Entrez.py, Parser.py and py3k.py) are under the [Biopython License Agreement](http://www.biopython.org/DIST/LICENSE)
 
 ## Found a bug?
 Or would like a feature added? Or maybe drop some feedback?

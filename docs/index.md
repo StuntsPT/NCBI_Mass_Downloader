@@ -30,3 +30,5 @@ Just [open a new issue](https://github.com/StuntsPT/NCBI_Mass_Downloader/issues/
 
 ## License
 GPLv3
+
+Biopython files (Entrez.py, Parser.py and py3k.py) are under the [Biopython License Agreement](http://www.biopython.org/DIST/LICENSE)
