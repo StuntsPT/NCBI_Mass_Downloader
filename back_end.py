@@ -15,7 +15,7 @@
 #  MA 02110-1301, USA.
 #
 
-# Usage: back_end.py "user@email-address.com" "Query term" "database" outfile.fasta
+# Usage: back_end.py "Query term" "database" outfile.fasta
 
 import sys
 import re
@@ -26,8 +26,7 @@ import Entrez
 
 
 class Downloader(object):
-    def __init__(self, email, database, term, outfile, gui):
-        self.email = email
+    def __init__(self, database, term, outfile, gui):
         self.database = database
         self.term = term
         self.outfile = outfile
@@ -237,7 +236,7 @@ class Downloader(object):
         Run the functions in order.
         """
         batch_size = 3000
-        Entrez.email = self.email
+        Entrez.email = "frmartins@ciencias.ulisboa.pt"
         self.run = 1
 
         rec = self.ncbi_search(self.database, self.term)
