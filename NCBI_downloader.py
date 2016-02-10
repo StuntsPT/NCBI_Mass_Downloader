@@ -35,8 +35,10 @@ def main():
         front_end.main()
 
     else:
+        from argparser import arg_list
         from back_end import Downloader
-        dler = Downloader(sys.argv[2], sys.argv[1], sys.argv[3], 0)
+        args = arg_list()
+        dler = Downloader(args[0], args[1], args[2], 0)
         dler.run_everything()
 
 if __name__ == '__main__':
