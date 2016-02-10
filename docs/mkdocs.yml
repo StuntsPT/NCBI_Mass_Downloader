@@ -1,0 +1,8 @@
+pages:
+    - 'Introduction': 'index.md'
+    - 'Installation': 'install.md'
+    - 'Binary builds': 'binaries.md'
+    - 'Usage': 'usage.md'
+    - 'Testing': 'testing.md'
+    - 'Future Plans': 'future.md'
+    - 'Limitations': 'limits.md'
