@@ -1,4 +1,4 @@
-# Testing:
+# Testing
 In order to test the program run the following:
 
      python NCBI_downloader.py "your.address@email-provider.com" "Lacerta monticola[organism]" "nucleotide" testdata.fasta

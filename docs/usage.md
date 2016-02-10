@@ -1,4 +1,4 @@
-# Usage:
+# Usage
 To use the GUI version:
 
     python NCBI_downloader.py
@@ -7,7 +7,7 @@ To use the command line version:
 
     python NCBI_downloader.py "user@email-address.com" "Query term" "database" outfile.fasta
 
-## Notes:
+## Notes
 * The program will not overwrite anything in the output file, but rather append sequences to it;
     * If you do not want this behavior, please use an empty file as output.
 * You may use *NCBI Mass Seqence Downloader* to access any of these databases: "nucleotide", "nuccore", "nucgss", "nucest", "protein", "genome" and "popset".

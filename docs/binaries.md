@@ -1,10 +1,10 @@
 # Binary Builds
 
-## Where to find them:
+## Where to find them
 Binary builds can always be found in the [releases page](https://github.com/StuntsPT/NCBI_Mass_Downloader/releases).
 Note that not all versions get a binary build. Sometimes this happens because two versions are released too close to each other, other times, because the changes were only in the documentation.
 
-## How to build:
+## How to build
 Binaries for all platforms (GNU/Linux, Windows & OSX) are built using [pyinstaller](http://www.pyinstaller.org/). They are built using the following options:
 
 (GNU/Linux)
