@@ -5,7 +5,7 @@ To use the GUI version:
 
 To use the command line version:
 
-    python NCBI_downloader.py "Query term" "database" outfile.fasta
+    python NCBI_downloader.py -q "Query term" -d "database" -o outfile.fasta
 
 ## Notes
 * The program will not overwrite anything in the output file, but rather append sequences to it;s

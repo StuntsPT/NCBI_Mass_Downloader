@@ -1,7 +1,7 @@
 # Testing
 In order to test the program run the following:
 
-     python NCBI_downloader.py "Lacerta monticola[organism]" "nucleotide" testdata.fasta
+     python NCBI_downloader.py -q "Lacerta monticola[organism]" -d "nucleotide" -o testdata.fasta
 
 If everything is working as it should, you should receive a fasta file with 182 sequences. However, please note that due to the changing nature of the database, this value is likely to change over time.
 
