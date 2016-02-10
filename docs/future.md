@@ -3,5 +3,6 @@
     * This effectively limits *NCBI Mass Sequence Downloader* to **sequence** databases.
 * As more NCBI sequence databases become available, they will be added to *NCBI Mass Sequence Downloader*.
 * Add more online help topics, as suggested in issue [#1](https://github.com/StuntsPT/NCBI_Mass_Downloader/issues/1).
+* Add argument parsing and value checking as referenced in [#8](https://github.com/StuntsPT/NCBI_Mass_Downloader/issues/8) and [#9](https://github.com/StuntsPT/NCBI_Mass_Downloader/issues/9).
 
 [Return to Introduction](index.md)
