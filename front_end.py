@@ -66,8 +66,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Help with queries
         self.query_help_url = "http://www.ncbi.nlm.nih.gov/books/NBK3837/#_EntrezHelp_Entrez_Searching_Options_"
+        self.manual_url = "http://ncbi-mass-sequence-downloader.readthedocs.org/en/latest"
         self.help_label = QtWidgets.QLabel(self)
-        self.help_label.setText("Click <a href=" + self.query_help_url + ">here</a> for help with the Query!")
+        self.help_label.setText("Read the <a href=" + self.manual_url +
+                                ">manual</a>. Help with the <a href=" +
+                                self.query_help_url + ">query</a>.")
         self.help_label.setOpenExternalLinks(True)
 
         # Databases to search and respective label
