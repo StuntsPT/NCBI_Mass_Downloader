@@ -5,6 +5,8 @@
 This program will download sequences *en masse* from several NCBI databases (at the user's choice).
 After the downloading is finished, the program will check the resulting file for any missing sequences and continuously retry the download until all sequences are present in the local file.
 
+[NCBI Data Usage Policies and Disclaimers](https://www.ncbi.nlm.nih.gov/home/about/policies.shtml) may apply to downloaded data.
+
 ## Documentation:
 [![Documentation Status](https://readthedocs.org/projects/ncbi-mass-sequence-downloader/badge/?version=latest)](http://ncbi-mass-sequence-downloader.readthedocs.org/en/latest/?badge=latest)
 
