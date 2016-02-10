@@ -87,7 +87,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Search query line and respective label
         self.search_query = QtWidgets.QLineEdit(self)
-        self.search_query.setFixedWidth(300)
+        self.search_query.setFixedWidth(470)
         self.search_query_label = QtWidgets.QLabel(self)
         self.search_query_label.setText("Search Query:")
 
