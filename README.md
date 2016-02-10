@@ -1,3 +1,7 @@
+[![Documentation Status](https://readthedocs.org/projects/ncbi-mass-sequence-downloader/badge/?version=latest)](http://ncbi-mass-sequence-downloader.readthedocs.org/en/latest/?badge=latest)
+
+-------
+
 # NCBI Mass Sequence Downloader
 
 
