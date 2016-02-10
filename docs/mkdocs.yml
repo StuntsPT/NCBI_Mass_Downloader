@@ -1,3 +1,5 @@
+site_name: 'NCBI Mass Sequence Downloader manual'
+site_favicon: ../Assets/Icon.png
 pages:
     - 'Introduction': 'index.md'
     - 'Installation': 'install.md'
