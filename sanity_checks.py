@@ -16,11 +16,12 @@
 
 import os
 
-class basic_checks():
+class basic_checks(object):
     def __inti__(self, query, outfile, gui):
         self.query = query
         self.outfile = outfile
         self.gui = gui
+        super(basic_checks, self).__init__()
 
 
     def sanity_checker(self):
@@ -31,10 +32,7 @@ class basic_checks():
             self.msg = "Your search query is too short. It should have at least 3 "\
                   "characters."
             if self.gui == 1:
-                self.fail = QtWidgets.QMessageBox.warning(self,
-                                                          "Problem with search query",
-                                                          self.msg,
-                                                          QtWidgets.QMessageBox.Ok)
+                self.length_ok.emit("Problem with search query", msg)
                 return 0
             else:
                 quit(self.msg)

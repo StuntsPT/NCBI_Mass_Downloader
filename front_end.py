@@ -199,7 +199,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.file_to_handle = str(self.save_file_line.displayText())
 
 
-        if sanity_checker(self.search_term, self.file_to_handle, 1) == 1:
+        if basic_checks_gui.sanity_checker(self.search_term, self.file_to_handle, 1) == 1:
 
             self.Get_data = DownloaderGui(self.database_to_search,
                                           self.search_term,
@@ -284,6 +284,12 @@ class DownloaderGui(Downloader, QtCore.QObject):
         # Add threading!
         Downloader.__init__(self, database, term, outfile, gui)
 
+class basic_checks_gui(basic_checks, QtCore.Qobject):
+    length_ok = QtCore.pyqtSignal(tuple)
+    outfile_ok = QtCore.pyqtSignal(tuple)
+
+    def __init__(self, query, outfile, gui):
+        basic_checks.__inti__(self, query, outfile, gui)
 
 def main():
 
