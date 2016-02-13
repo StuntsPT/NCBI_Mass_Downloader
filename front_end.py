@@ -22,6 +22,7 @@ import os
 from PyQt5 import QtGui, QtCore, QtWidgets
 
 from back_end import Downloader
+from sanity_checks import basic_checks
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -198,7 +199,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.file_to_handle = str(self.save_file_line.displayText())
 
 
-        if self.sanityCheck() == 1:
+        if sanity_checker(self.search_term, self.file_to_handle, 1) == 1:
 
             self.Get_data = DownloaderGui(self.database_to_search,
                                           self.search_term,
