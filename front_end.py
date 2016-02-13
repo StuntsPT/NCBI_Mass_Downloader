@@ -284,7 +284,7 @@ class DownloaderGui(Downloader, QtCore.QObject):
         # Add threading!
         Downloader.__init__(self, database, term, outfile, gui)
 
-class basic_checks_gui(basic_checks, QtCore.Qobject):
+class basic_checks_gui(basic_checks, QtCore.QObject):
     length_ok = QtCore.pyqtSignal(tuple)
     outfile_ok = QtCore.pyqtSignal(tuple)
 
