@@ -199,7 +199,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.file_to_handle = str(self.save_file_line.displayText())
 
 
-        if basic_checks_gui.sanity_checker(self.search_term, self.file_to_handle, 1) == 1:
+        if basic_checks_gui(self.search_term, self.file_to_handle, 1) == 1:
 
             self.Get_data = DownloaderGui(self.database_to_search,
                                           self.search_term,
