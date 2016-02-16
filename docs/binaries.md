@@ -4,8 +4,13 @@
 Binary builds can always be found in the [releases page](https://github.com/StuntsPT/NCBI_Mass_Downloader/releases).
 Note that not all versions get a binary build. Sometimes this happens because two versions are released too close to each other, other times, because the changes were only in the documentation.
 
+## Build system
+Binaries for all platforms (GNU/Linux, Windows & OSX) are built using [pyinstaller](http://www.pyinstaller.org/).
+Pyinstaller can be installed on any OS via PIP `pip install pyinstaller`.
+On windows, the python 3 version is recommended since PyQt only has python 3 (python 3.4, to be specific) binaries available for this platform.
+
 ## How to build them
-Binaries for all platforms (GNU/Linux, Windows & OSX) are built using [pyinstaller](http://www.pyinstaller.org/). They are built using the following options:
+Binaries are built using the following options:
 
 (GNU/Linux)
 ```bash
