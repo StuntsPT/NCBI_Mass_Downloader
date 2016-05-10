@@ -8,9 +8,9 @@ After the downloading is finished, the program will check the resulting file for
 [NCBI Data Usage Policies and Disclaimers](https://www.ncbi.nlm.nih.gov/home/about/policies.shtml) may apply to downloaded data.
 
 ## Documentation:
-[![Documentation Status](https://readthedocs.org/projects/ncbi-mass-sequence-downloader/badge/?version=latest)](http://ncbi-mass-sequence-downloader.readthedocs.org/en/latest/?badge=latest)
+[![Documentation Status](https://readthedocs.org/projects/ncbi-mass-sequence-downloader/badge/?version=latest)](http://ncbi-mass-sequence-downloader.readthedocs.io/en/latest/?badge=latest)
 
-The complete manual can be found on [readthedocs.org](http://ncbi-mass-sequence-downloader.readthedocs.org/en/latest/).
+The complete manual can be found on [readthedocs.org](http://ncbi-mass-sequence-downloader.readthedocs.io/en/latest/).
 
 ## Dependencies:
 * Pyhton (2 or 3) (and the standard lib);
