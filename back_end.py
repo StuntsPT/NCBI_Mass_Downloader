@@ -81,7 +81,17 @@ class Downloader(object):
         """
         # There is a limit of 10k for each query, so we have to break our data.
         accessions = []
+        if self.gui == 1:
+            self.max_seq.emit(len(id_list) * 2)
+
         for chunk in range(0, len(id_list), 10000):
+            if self.gui == 1:
+                self.prog_data.emit(chunk + 10000)
+            else:
+                print("Translating GIs to Accessions: Record " +
+                      str(chunk + 1) + " to " +
+                      str(min(chunk + 10000, len(id_list))) + " of " +
+                      str(len(id_list)) + ".")
             fetch_handle = Entrez.efetch(db=self.database,
                                          id=id_list[chunk:chunk + 10000],
                                          rettype="acc", retmode="text")
@@ -115,8 +125,8 @@ class Downloader(object):
                 print("Downloading record %i to %i of %i" %(start+1, end, count))
 
                 if self.gui == 1:
-                    self.max_seq.emit(count)
-                    self.prog_data.emit(end)
+                    #self.max_seq.emit(count)
+                    self.prog_data.emit(end + count)
 
                 if Run == 1:
                     fetch_func = self.fetch_by_history
