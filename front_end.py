@@ -16,7 +16,6 @@
 #
 
 import sys
-import re
 import os
 
 from PyQt5 import QtGui, QtCore, QtWidgets
