@@ -40,7 +40,7 @@ class Downloader(object):
         Submit search to NCBI and return the records.
         """
         self.handle = Entrez.esearch(db=database, term=term, usehistory="y",
-                                     retmax=100000000)
+                                     retmax=100000000, idtype="acc")
         self.record = Entrez.read(self.handle)
         self.handle.close()
 
@@ -168,7 +168,7 @@ class Downloader(object):
 
         for lines in target_handle:
             if lines.startswith(">"):
-                ID = re.search("gi\|.*?\|", lines).group(0)[3:-1]
+                ID = re.match("([^\s]+)", lines).group(0)[1:]
                 verified_ids.add(ID)
 
         target_handle.close()
