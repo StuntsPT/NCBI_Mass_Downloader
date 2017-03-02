@@ -53,10 +53,7 @@ class Downloader(object):
         them.
         """
         count = int(record["Count"]) # Int
-        if self.database != "genome":
-            IDs = self.gi_to_acc(record["IdList"]) # List
-        else:
-            IDs = record["IdList"] # List
+        IDs = record["IdList"] # List
         webenv = record["WebEnv"] # String
         query_key = record["QueryKey"] #String
 
@@ -70,25 +67,6 @@ class Downloader(object):
             return None
 
         return count, IDs, webenv, query_key
-
-
-    def gi_to_acc(self, id_list):
-        """
-        Makes a new efetch query to convert the old, depreccated GI list into
-        accession numbers. This became necessary as NCBI deprecated the GI
-        identifiers in favour of only using accession numbers.
-        However, esearch still returns a GI list...
-        """
-        # There is a limit of 10k for each query, so we have to break our data.
-        accessions = []
-        for chunk in range(0, len(id_list), 10000):
-            fetch_handle = Entrez.efetch(db=self.database,
-                                         id=id_list[chunk:chunk + 10000],
-                                         rettype="acc", retmode="text")
-            accessions += [gi.strip() for gi in fetch_handle]
-            fetch_handle.close()
-
-        return accessions
 
 
     def main_organizer(self, count, IDs, webenv, query_key, b_size, Run):
@@ -190,7 +168,7 @@ class Downloader(object):
 
         for lines in target_handle:
             if lines.startswith(">"):
-                ID = lines[1:lines.index(" ")]
+                ID = re.search("gi\|.*?\|", lines).group(0)[3:-1]
                 verified_ids.add(ID)
 
         target_handle.close()
@@ -238,10 +216,10 @@ class Downloader(object):
         http://www.ncbi.nlm.nih.gov/books/NBK25499/
         """
         import urllib
+        from re import search
         nuc_gi_list = []
-        print(gilist)
-        query_url = ("https://eutils.ncbi.nlm.nih.gov/entrez/eutils/"
-                     "elink.fcgi?dbfrom=genome&db=nucleotide&id=")
+        query_url = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/" + \
+                    "elink.fcgi?dbfrom=genome&db=nucleotide&id="
         for genome_id in gilist:
             tmplist = []
             xml = urllib.request.urlopen(query_url + genome_id)
@@ -250,10 +228,7 @@ class Downloader(object):
                     tmplist.append(re.search("<Id>.*</Id>", content.decode('utf-8')).group()[4:-5])
             nuc_gi_list += tmplist[1:]
 
-        self.database = "nucleotide"
-        nuc_acc_list = self.gi_to_acc(nuc_gi_list)
-
-        return nuc_acc_list
+        return nuc_gi_list
 
 
     def run_everything(self):
@@ -272,6 +247,7 @@ class Downloader(object):
         if self.database == "genome":
             IDs = self.translate_genome(IDs)
             count = len(IDs)
+            self.database = "nucleotide"
             self.run = 2
         self.main_organizer(count, IDs, webenv, query_key, batch_size, self.run)
 
