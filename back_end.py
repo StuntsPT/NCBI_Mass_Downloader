@@ -52,10 +52,10 @@ class Downloader(object):
         Splits the record returned by Entrez into sparate variables and returns
         them.
         """
-        count = int(record["Count"]) # Int
-        IDs = record["IdList"] # List
-        webenv = record["WebEnv"] # String
-        query_key = record["QueryKey"] #String
+        count = int(record["Count"])  # Int
+        IDs = record["IdList"]  # List
+        webenv = record["WebEnv"]  # String
+        query_key = record["QueryKey"]  # String
 
         assert count == len(IDs)
 
@@ -90,7 +90,8 @@ class Downloader(object):
                     end = start + b_size
                 else:
                     end = count
-                print("Downloading record %i to %i of %i" %(start+1, end, count))
+                print("Downloading record %i to %i of %i" % (start + 1, end,
+                                                             count))
 
                 if self.gui == 1:
                     self.max_seq.emit(count)
@@ -102,7 +103,8 @@ class Downloader(object):
                 else:
                     fetch_func = self.fetch_by_id
                     fetch_args = IDs, b_size
-                # Make sure that the program carries on despite server "hammering" errors.
+                # Make sure that the program carries on despite server
+                # "hammering" errors.
                 attempt = 0
                 while self.terminated is False:
                     try:
@@ -114,13 +116,13 @@ class Downloader(object):
                             break
                     except:
                         if attempt < 5:
-                            print("NCBI is retuning XML instead of sequence data. "
-                                  "Trying the same chunk again in 8\'\'.")
+                            print("NCBI is retuning XML instead of sequence "
+                                  "data. Trying the same chunk again in 8\'\'.")
                             attempt += 1
                             sleep(8)
                         else:
-                            print("Too many errors in a row. Let's make a larger "
-                                  "20\'\' pause and try again.")
+                            print("Too many errors in a row. Let's make a "
+                                  " larger 20\'\' pause and try again.")
                             attempt = 0
                             sleep(20)
                 if self.terminated is False:
@@ -138,14 +140,15 @@ class Downloader(object):
         if self.terminated is True:
             return
         else:
-            print("Checking for sequences that did not download... Please wait.")
+            print("Checking for sequences that did not download... Please "
+                  "wait.")
             ver_ids = self.error_finder(self.outfile)
             missing_ids = []
             for i in IDs:
                 if i not in ver_ids:
                     missing_ids.append(i)
             numb_missing = len(missing_ids)
-            IDs = missing_ids # Improve performance on subsequent runs
+            IDs = missing_ids  # Improve performance on subsequent runs
             if numb_missing == 0:
                 print("All sequences were downloaded correctly. Good!")
                 if self.gui == 0:
@@ -155,13 +158,15 @@ class Downloader(object):
 
             else:
                 print("%s sequences did not download correctly (or at all). "
-                      "Retrying..." %(numb_missing))
-                self.main_organizer(numb_missing, IDs, webenv, query_key, b_size, 2)
+                      "Retrying..." % (numb_missing))
+                self.main_organizer(numb_missing, IDs, webenv, query_key,
+                                    b_size, 2)
 
 
     def error_finder(self, target_file):
         """
-        Looks for errors in the output fasta and retruns a list of necessary retries.
+        Looks for errors in the output fasta and retruns a list of necessary
+        retries.
         """
         target_handle = open(target_file, 'r')
         verified_ids = set()
@@ -209,7 +214,7 @@ class Downloader(object):
         return data
 
 
-    def translate_genome(self, gilist):
+    def translate_genome(self, acclist):
         """
         Translates genome query IDs into a nucleotide query IDs, since NCBI has
         deprecated the use of the "genome" database, and the old genome IDs.
@@ -217,18 +222,19 @@ class Downloader(object):
         """
         import urllib
         from re import search
-        nuc_gi_list = []
+        nuc_acc_list = []
         query_url = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/" + \
                     "elink.fcgi?dbfrom=genome&db=nucleotide&id="
-        for genome_id in gilist:
+        for genome_id in acclist:
             tmplist = []
             xml = urllib.request.urlopen(query_url + genome_id)
             for content in xml:
                 if content.endswith(b"</Id>\n"):
-                    tmplist.append(re.search("<Id>.*</Id>", content.decode('utf-8')).group()[4:-5])
-            nuc_gi_list += tmplist[1:]
+                    tmplist.append(re.search("<Id>.*</Id>",
+                                   content.decode('utf-8')).group()[4:-5])
+            nuc_acc_list += tmplist[1:]
 
-        return nuc_gi_list
+        return nuc_acc_list
 
 
     def run_everything(self):
