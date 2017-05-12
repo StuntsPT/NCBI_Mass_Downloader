@@ -9,6 +9,10 @@ The program uses the Entrez module from [biopython](https://github.com/biopython
 
 [NCBI Data Usage Policies and Disclaimers](https://www.ncbi.nlm.nih.gov/home/about/policies.shtml) may apply to downloaded data.
 
+## Citation:
+If you use NCBI Mass Sequence Downloader in your research, please cite the following paper:
+Pina-Martins, F., & Paulo, O. S. (2016). NCBI Mass Sequence Downloader–Large dataset downloading made easy. SoftwareX, 5, 80–83. https://doi.org/10.1016/j.softx.2016.04.007
+
 ## Dependencies
 * Pyhton (2 or 3) (and the standard lib);
 * [PyQt5](http://www.riverbankcomputing.com/software/pyqt/intro) for the GUI version.
