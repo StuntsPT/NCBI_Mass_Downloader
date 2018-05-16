@@ -110,7 +110,7 @@ from py3k import _binary_to_string_handle, _as_bytes
 
 email = None
 tool = "ncbi_mass_sequence_downloader"
-api_key = None
+api_key = "bbceccfdf97b6b7e06e93c918e010f1ecf09"
 
 
 # XXX retmode?
