@@ -14,8 +14,10 @@ The complete manual can be found on [readthedocs.org](http://ncbi-mass-sequence-
 
 ## Citation:
 If you use NCBI Mass Sequence Downloader in your research, please cite the following paper:
-Pina-Martins, F., & Paulo, O. S. (2016). NCBI Mass Sequence Downloader–Large dataset downloading made easy. SoftwareX, 5, 80–83. https://doi.org/10.1016/j.softx.2016.04.007
 
+```
+Pina-Martins, F., & Paulo, O. S. (2016). NCBI Mass Sequence Downloader–Large dataset downloading made easy. SoftwareX, 5, 80–83. https://doi.org/10.1016/j.softx.2016.04.007
+```
 
 ## Dependencies:
 * Pyhton (2 or 3) (and the standard lib);
