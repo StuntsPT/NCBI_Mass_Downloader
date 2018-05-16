@@ -319,9 +319,9 @@ def select_item_consumer(name, attrs):
 
 class DataHandler(object):
 
-    from Bio import Entrez
-    global_dtd_dir = os.path.join(str(Entrez.__path__[0]), "DTDs")
-    global_xsd_dir = os.path.join(str(Entrez.__path__[0]), "XSDs")
+    import Entrez
+    global_dtd_dir = os.path.join(str(os.path.realpath(__file__)), "DTDs")
+    global_xsd_dir = os.path.join(str(os.path.realpath(__file__)), "XSDs")
     local_dtd_dir = ''
     local_xsd_dir = ''
 
