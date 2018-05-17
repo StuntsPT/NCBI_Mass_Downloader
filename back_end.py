@@ -243,6 +243,7 @@ class Downloader(object):
         """
         batch_size = 3000
         Entrez.email = "frmartins@ciencias.ulisboa.pt"
+        Entrez.api_key = "bbceccfdf97b6b7e06e93c918e010f1ecf09"
         self.run = 1
 
         rec = self.ncbi_search(self.database, self.term)
