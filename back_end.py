@@ -34,28 +34,33 @@ class Downloader(object):
         self.terminated = False
         super(Downloader, self).__init__()
 
-
     def ncbi_search(self, database, term):
         """
         Submit search to NCBI and return the records.
         """
         self.handle = Entrez.esearch(db=database, term=term, usehistory="y",
-                                     retmax=100000000, idtype="acc")
+                                     retmax=10, idtype="acc")
         self.record = Entrez.read(self.handle)
         self.handle.close()
 
         return self.record
 
-
-    def record_processor(self, record):
+    def record_processor(self, record, database):
         """
         Splits the record returned by Entrez into sparate variables and returns
         them.
         """
         count = int(record["Count"])  # Int
-        IDs = record["IdList"]  # List
         webenv = record["WebEnv"]  # String
         query_key = record["QueryKey"]  # String
+        IDs = []
+
+        for i in range(0, count, 10000):
+            iter_handle = Entrez.efetch(db=database, webenv=webenv,
+                                        query_key=query_key, retmax=10000,
+                                        rettype="acc", retstart=i)
+            IDs += [x.rstrip() for x in iter_handle]
+            iter_handle.close()
 
         assert count == len(IDs)
 
@@ -67,7 +72,6 @@ class Downloader(object):
             return None
 
         return count, IDs, webenv, query_key
-
 
     def main_organizer(self, count, IDs, webenv, query_key, b_size, Run):
         """
@@ -132,7 +136,6 @@ class Downloader(object):
         if self.terminated is False:
             self.re_downloader(IDs, webenv, query_key, b_size)
 
-
     def re_downloader(self, IDs, webenv, query_key, b_size):
         """
         Checks for missing sequences.
@@ -162,7 +165,6 @@ class Downloader(object):
                 self.main_organizer(numb_missing, IDs, webenv, query_key,
                                     b_size, 2)
 
-
     def error_finder(self, target_file):
         """
         Looks for errors in the output fasta and retruns a list of necessary
@@ -179,7 +181,6 @@ class Downloader(object):
         target_handle.close()
         return verified_ids
 
-
     def fetch_by_id(self, IDs, b_size):
         """
         Fetches NCBI data based on the IDs, rather than a search query. Returns
@@ -194,7 +195,6 @@ class Downloader(object):
         id_handle.close()
 
         return data
-
 
     def fetch_by_history(self, start, b_size, webenv, query_key):
         """
@@ -212,7 +212,6 @@ class Downloader(object):
         hist_handle.close()
 
         return data
-
 
     def translate_genome(self, acclist):
         """
@@ -236,7 +235,6 @@ class Downloader(object):
 
         return nuc_acc_list
 
-
     def run_everything(self):
         """
         Run the functions in order.
@@ -248,7 +246,8 @@ class Downloader(object):
 
         rec = self.ncbi_search(self.database, self.term)
         try:
-            count, IDs, webenv, query_key = self.record_processor(rec)
+            count, IDs, webenv, query_key = self.record_processor(rec,
+                                                                  self.database)
         except TypeError:
             return None
         if self.database == "genome":
