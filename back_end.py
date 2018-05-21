@@ -254,7 +254,7 @@ class Downloader(object):
                                                 retmax=chunk,
                                                 rettype="acc", retstart=i)
                     success = True
-                except HTTPError:
+                except urllib.error.HTTPError:
                     print("Got an HTTPError. Let's wait 8'' and try again.")
                     sleep(8)
             if done_set is None:
