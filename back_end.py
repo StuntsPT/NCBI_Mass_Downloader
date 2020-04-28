@@ -149,7 +149,9 @@ class Downloader(object):
             missing_ids = []
             for i in IDs:
                 if i not in ver_ids:
-                    missing_ids.append(i)
+                    if not bool(re.search('[A-Z]{4}0+(\.\d){0,}$', i)):
+                        # Make sure we remove "Master Records" from the list
+                        missing_ids.append(i)
             numb_missing = len(missing_ids)
             IDs = missing_ids  # Improve performance on subsequent runs
             if numb_missing == 0:
