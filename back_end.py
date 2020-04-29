@@ -174,8 +174,8 @@ class Downloader(object):
                 self.main_organizer(numb_missing, IDs, webenv, query_key,
                                     b_size, 2)
             else:
-                print("NOTICE: After %s retries, not all sequences were"
-                      "downloaded correctly.=-(", (self.retry_threshold))
+                print("NOTICE: After %s retries, not all sequences were "
+                      "downloaded correctly.=-(" % (self.retry_threshold))
                 print("A list of failed downloads can be found on %s.failed"
                       % (self.outfile))
                 fail_log = open(self.outfile + ".failed", "w")
