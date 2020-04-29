@@ -180,7 +180,7 @@ class Downloader(object):
                       % (self.outfile))
                 fail_log = open(self.outfile + ".failed", "w")
                 for i in missing_ids:
-                    fail_log.write(i)
+                    fail_log.write(i + "\n")
                 fail_log.close()
                 if self.gui == 0:
                     sys.exit("Program finished without error.")
