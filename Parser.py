@@ -280,7 +280,7 @@ class ValidationError(ValueError):
 class DataHandler:
     """Data handler for parsing NCBI XML from Entrez."""
 
-    from Bio import Entrez
+    import Entrez
 
     global_dtd_dir = os.path.join(str(Entrez.__path__[0]), "DTDs")
     global_xsd_dir = os.path.join(str(Entrez.__path__[0]), "XSDs")
