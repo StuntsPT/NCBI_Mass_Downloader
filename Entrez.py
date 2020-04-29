@@ -500,7 +500,7 @@ def read(handle, validate=True, escape=False):
     (if any) of each element in a dictionary my_element.attributes, and
     the tag name in my_element.tag.
     """
-    from .Parser import DataHandler
+    from Parser import DataHandler
 
     handler = DataHandler(validate, escape)
     record = handler.read(handle)
