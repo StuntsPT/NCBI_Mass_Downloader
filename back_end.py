@@ -32,6 +32,8 @@ class Downloader(object):
         self.outfile = outfile
         self.gui = gui
         self.terminated = False
+        self.failures = [[], 0]
+        self.retry_threshold = 5
         super(Downloader, self).__init__()
 
     def ncbi_search(self, database, term):
@@ -152,6 +154,10 @@ class Downloader(object):
                     if not bool(re.search('[A-Z]{4}0+(\.\d){0,}$', i)):
                         # Make sure we remove "Master Records" from the list
                         missing_ids.append(i)
+            if self.failures[0] != missing_ids:
+                self.failures[1] = 0
+            else:
+                self.failures[1] += 1
             numb_missing = len(missing_ids)
             IDs = missing_ids  # Improve performance on subsequent runs
             if numb_missing == 0:
@@ -161,11 +167,26 @@ class Downloader(object):
                 else:
                     self.finished.emit("Download finished successfully!")
 
-            else:
+            elif self.failures[1] < self.retry_threshold:
                 print("%s sequences did not download correctly (or at all). "
                       "Retrying..." % (numb_missing))
                 self.main_organizer(numb_missing, IDs, webenv, query_key,
                                     b_size, 2)
+            else:
+                print("NOTICE: Not all sequences were downloaded correctly.=-(")
+                print("A list of failed downloads can be found on %s.failed"
+                      % (self.outfile))
+                fail_log = open(self.outfile + ".failed", "w")
+                for i in missing_ids:
+                    fail_log.write(i)
+                fail_log.close()
+                if self.gui == 0:
+                    sys.exit("Program finished without error.")
+                else:
+                    self.finished.emit("Download finished with some failures!\n"
+                                       "Please check the file %s.failed for a "
+                                       "detailed list" % (self.outfile))
+
 
     def error_finder(self, target_file):
         """
