@@ -127,7 +127,7 @@ email = None
 max_tries = 3
 sleep_between_tries = 15
 tool = "ncbi_mass_sequence_downloader"
-api_key = None
+api_key = "bbceccfdf97b6b7e06e93c918e010f1ecf09"
 
 
 # XXX retmode?
