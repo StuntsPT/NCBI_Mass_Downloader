@@ -32,6 +32,8 @@ class Downloader(object):
         self.outfile = outfile
         self.gui = gui
         self.terminated = False
+        self.failures = [[], 0]
+        self.retry_threshold = 5
         super(Downloader, self).__init__()
         self.run = 0
         self.webenv = ""
@@ -192,7 +194,7 @@ class Downloader(object):
                                            "failures!\nPlease check the file "
                                            "%s.failed for a detailed "
                                            "list." % (self.outfile))
-                                           
+
 
     def fasta_parser(self, target_file):
         """
