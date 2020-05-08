@@ -154,13 +154,45 @@ class Downloader(object):
                     missing_ids = []
                     for i in ids:
                         if i not in ver_ids:
-                            missing_ids.append(i)
+                            if not bool(re.search('[A-Z]{4}0+(\.\d){0,}$', i)):
+                                # Remove any "Master Records" from the set
+                                missing_ids.append(i)
+                    if self.failures[0] != missing_ids:
+                        self.failures[0] = missing_ids
+                        self.failures[1] = 0
+                    else:
+                        self.failures[1] += 1
                 numb_missing = len(missing_ids)
                 ids = missing_ids  # Improve performance on subsequent runs
-                print("%s sequences did not download correctly (or at all). "
-                      "Retrying..." % (numb_missing))
-                self.run = 2
-                self.main_organizer(numb_missing, ids, b_size)
+                if numb_missing == 0:
+                    print("All sequences were downloaded correctly. Good!")
+                    if self.gui == 0:
+                        sys.exit("Program finished without error.")
+                    else:
+                        self.finished.emit("Download finished successfully!")
+
+                elif self.failures[1] < self.retry_threshold:
+                    print("%s sequences did not download correctly (or at all)."
+                          " Retrying..." % (numb_missing))
+                    self.run = 2
+                    self.main_organizer(numb_missing, ids, b_size)
+                else:
+                    print("NOTICE: After %s retries, not all sequences were "
+                          "downloaded correctly.=-(" % (self.retry_threshold))
+                    print("A list of failed downloads can be found on %s.failed"
+                          % (self.outfile))
+                    fail_log = open(self.outfile + ".failed", "w")
+                    for i in missing_ids:
+                        fail_log.write(i + "\n")
+                    fail_log.close()
+                    if self.gui == 0:
+                        sys.exit("Program finished without error.")
+                    else:
+                        self.finished.emit("Download finished with some "
+                                           "failures!\nPlease check the file "
+                                           "%s.failed for a detailed "
+                                           "list." % (self.outfile))
+                                           
 
     def fasta_parser(self, target_file):
         """
