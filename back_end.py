@@ -159,6 +159,9 @@ class Downloader(object):
                             if not bool(re.search('[A-Z]{4}0+(\.\d){0,}$', i)):
                                 # Remove any "Master Records" from the set
                                 missing_ids.append(i)
+                            else:
+                                print("WARNING: Master record found and "
+                                "removed: %s." % (i))
                     if self.failures[0] != missing_ids:
                         self.failures[0] = missing_ids
                         self.failures[1] = 0
@@ -294,7 +297,7 @@ class Downloader(object):
             if done_set is None:
                 ids += [x.rstrip() for x in iter_handle]
             else:
-                ids += [x.rstrip() for x in iter_handle if x not in done_set]
+                ids += [x.rstrip() for x in iter_handle if x.rstrip() not in done_set]
             iter_handle.close()
 
         return ids
