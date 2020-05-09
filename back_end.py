@@ -154,19 +154,19 @@ class Downloader(object):
                     missing_ids = self.id_fetcher(count, done_set=ver_ids)
                 else:
                     missing_ids = []
-                    for i in ids:
-                        if i not in ver_ids:
-                            if not bool(re.search('[A-Z]{4}0+(\.\d){0,}$', i)):
-                                # Remove any "Master Records" from the set
-                                missing_ids.append(i)
-                            else:
-                                print("WARNING: Master record found and "
-                                "removed: %s." % (i))
-                    if self.failures[0] != missing_ids:
-                        self.failures[0] = missing_ids
-                        self.failures[1] = 0
-                    else:
-                        self.failures[1] += 1
+                for i in ids:
+                    if i not in ver_ids:
+                        if not bool(re.search('[A-Z]{4}0+(\.\d){0,}$', i)):
+                            # Remove any "Master Records" from the set
+                            missing_ids.append(i)
+                        else:
+                            print("WARNING: Master record found and "
+                                  "removed: %s." % (i))
+                if self.failures[0] != missing_ids:
+                    self.failures[0] = missing_ids
+                    self.failures[1] = 0
+                else:
+                    self.failures[1] += 1
                 numb_missing = len(missing_ids)
                 ids = missing_ids  # Improve performance on subsequent runs
                 if numb_missing == 0:
@@ -297,7 +297,12 @@ class Downloader(object):
             if done_set is None:
                 ids += [x.rstrip() for x in iter_handle]
             else:
-                ids += [x.rstrip() for x in iter_handle if x.rstrip() not in done_set]
+                query_ids = set([x.rstrip() for x in iter_handle])
+                irregular_ids = set([x.replace("_", "|") for x in query_ids])
+                regulars = query_ids.difference(done_set)
+                irregulars = irregular_ids.difference(done_set)
+                ids += list(regulars.intersection(irregulars))
+
             iter_handle.close()
 
         return ids
