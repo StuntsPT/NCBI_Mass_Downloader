@@ -22,7 +22,7 @@ Pina-Martins, F., & Paulo, O. S. (2016). NCBI Mass Sequence Downloader–Large d
 ```
 
 ## Dependencies:
-* Pyhton (2 or 3) (and the standard lib);
+* Python 3 (and the standard lib);
 * [PyQt5](http://www.riverbankcomputing.com/software/pyqt/intro) for the GUI version.
 
 
