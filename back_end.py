@@ -19,6 +19,8 @@
 
 import sys
 import re
+import requests
+import json
 from os import stat
 from time import sleep
 
@@ -41,13 +43,20 @@ class Downloader(object):
 
     def ncbi_search(self, database, term):
         """
-        Submit search to NCBI and return the records.
+        Submit search to NCBI and return the WebEnv & QueryKey.
         """
-        handle = Entrez.esearch(db=database, term=term, usehistory="y")
-        record = Entrez.read(handle)
-        handle.close()
+        url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
+        search_params = {"db": database,
+                         "term": term,
+                         "retmode": "json",
+                         "usehistory": "y"}
+        handle = requests.get(url, params=search_params)
+        qkey = handle.json()["esearchresult"]["querykey"]
+        webenv = handle.json()["esearchresult"]["webenv"]
+        count = int(handle.json()["esearchresult"]["count"])
 
-        return record
+        return count, qkey, webenv
+
 
     def record_processor(self, record):
         """
@@ -316,12 +325,9 @@ class Downloader(object):
         Entrez.api_key = "bbceccfdf97b6b7e06e93c918e010f1ecf09"
         self.run = 1
 
-        rec = self.ncbi_search(self.database, self.term)
-        try:
-            count, self.webenv, self.query_key = self.record_processor(rec)
-            ids = []
-        except TypeError:
-            return None
+        count, self.query_key, self.webenv = self.ncbi_search(self.database, self.term)
+        ids = []
+
         if self.database == "genome":
             ids = self.translate_genome(count)
             count = len(ids)
