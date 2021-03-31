@@ -41,21 +41,26 @@ class Downloader(object):
         self.webenv = ""
         self.query_key = ""
 
-    def ncbi_search(self, database, term):
+    def ncbi_search(self, database, term, history="y", retmax=0):
         """
         Submit search to NCBI and return the WebEnv & QueryKey.
         """
+        record = {}
         url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
         search_params = {"db": database,
                          "term": term,
                          "retmode": "json",
-                         "usehistory": "y"}
-        handle = requests.get(url, params=search_params)
-        qkey = handle.json()["esearchresult"]["querykey"]
-        webenv = handle.json()["esearchresult"]["webenv"]
-        count = int(handle.json()["esearchresult"]["count"])
+                         "usehistory": history,
+                         "idtype": "acc",
+                         "retmax": retmax}
 
-        return count, qkey, webenv
+        handle = requests.get(url, params=search_params)
+        record["qkey"] = handle.json()["esearchresult"]["querykey"]
+        record["webenv"] = handle.json()["esearchresult"]["webenv"]
+        record["count"] = int(handle.json()["esearchresult"]["count"])
+        record["accn"] = handle.json()["esearchresult"]["idlist"]
+
+        return record
 
 
     def record_processor(self, record):
@@ -76,14 +81,14 @@ class Downloader(object):
 
         return count, webenv, query_key
 
-    def main_organizer(self, count, ids, b_size):
+    def main_organizer(self, count, b_size):
         """
         Defines what tasks need to be performed, handles NCBI server errors and
         writes the sequences into the outfile.
         """
         try:
             if self.run == 1 and stat(self.outfile).st_size != 0:
-                self.re_downloader(ids, b_size, count)
+                self.re_downloader(b_size, count)
                 return None
         except OSError:
             pass
@@ -104,12 +109,10 @@ class Downloader(object):
                     self.max_seq.emit(count)
                     self.prog_data.emit(end)
 
-                if ids == []:
-                    fetch_func = self.fetch_by_history
-                    fetch_args = start, b_size
-                else:
-                    fetch_func = self.fetch_by_id
-                    fetch_args = ids, b_size
+
+                fetch_func = self.fetch_by_history
+                fetch_args = start, b_size
+
                 # Make sure that the program carries on despite server
                 # "hammering" errors.
                 attempt = 0
@@ -137,9 +140,9 @@ class Downloader(object):
 
         outfile.close()
         if self.terminated is False:
-            self.re_downloader(ids, b_size, count)
+            self.re_downloader(b_size, count)
 
-    def re_downloader(self, ids, b_size, count):
+    def re_downloader(self, b_size, count):
         """
         Checks if any sequences did not download correctlly.
         If discrepancies between the downloaded sequences and the IdList are
@@ -152,32 +155,34 @@ class Downloader(object):
             print("Checking for sequences that did not download... Please "
                   "wait.")
             ver_ids = self.fasta_parser(self.outfile)
-            if len(ver_ids) == count:
+            print("Getting an accession number list to compare with the local "
+                  "file... Please wait")
+            ncbi_accn_set = set(self.ncbi_search(self.database,
+                                                 self.term, "n", count)["accn"])
+            # Remove any Master records from the accn set:
+            master_records = set()
+            for accn in ncbi_accn_set:
+                if bool(re.search('[A-Z]{4}0+(\.\d){0,}$', accn)):
+                    master_records.add(accn)
+                    print("WARNING: Master record found and "
+                          "removed: %s." % (accn))
+            ncbi_accn_set = ncbi_accn_set - master_records
+
+            if ver_ids == ncbi_accn_set:
                 print("All sequences were downloaded correctly. Good!")
                 if self.gui == 0:
                     sys.exit("Program finished without error.")
                 else:
                     self.finished.emit("Download finished successfully!")
             else:
-                if ids == []:
-                    missing_ids = self.id_fetcher(count, done_set=ver_ids)
-                else:
-                    missing_ids = []
-                for i in ids:
-                    if i not in ver_ids:
-                        if not bool(re.search('[A-Z]{4}0+(\.\d){0,}$', i)):
-                            # Remove any "Master Records" from the set
-                            missing_ids.append(i)
-                        else:
-                            print("WARNING: Master record found and "
-                                  "removed: %s." % (i))
+                missing_ids = ncbi_accn_set - ver_ids
+
                 if self.failures[0] != missing_ids:
                     self.failures[0] = missing_ids
                     self.failures[1] = 0
                 else:
                     self.failures[1] += 1
                 numb_missing = len(missing_ids)
-                ids = missing_ids  # Improve performance on subsequent runs
                 if numb_missing == 0:
                     print("All sequences were downloaded correctly. Good!")
                     if self.gui == 0:
@@ -189,7 +194,7 @@ class Downloader(object):
                     print("%s sequences did not download correctly (or at all)."
                           " Retrying..." % (numb_missing))
                     self.run = 2
-                    self.main_organizer(numb_missing, ids, b_size)
+                    self.main_organizer(numb_missing, b_size)
                 else:
                     print("NOTICE: After %s retries, not all sequences were "
                           "downloaded correctly.=-(" % (self.retry_threshold))
@@ -223,20 +228,20 @@ class Downloader(object):
         target_handle.close()
         return verified_ids
 
-    def fetch_by_id(self, ids, b_size):
+    def fetch_by_accn(self, accns, b_size):
         """
         Fetches NCBI data based on the IDs, rather than a search query. Returns
         the data handle string.
         """
-        id_handle = Entrez.efetch(db=self.database,
-                                  id=ids,
-                                  rettype="fasta",
-                                  retmode="text",
-                                  retmax=b_size)
-        data = id_handle.read()
-        id_handle.close()
+        # id_handle = Entrez.efetch(db=self.database,
+        #                           id=ids,
+        #                           rettype="fasta",
+        #                           retmode="text",
+        #                           retmax=b_size)
+        # data = id_handle.read()
+        # id_handle.close()
 
-        return data
+        return
 
     def fetch_by_history(self, start, b_size):
         """
@@ -280,41 +285,6 @@ class Downloader(object):
 
         return nuc_acc_list
 
-    def id_fetcher(self, count, done_set=None):
-        """
-        Gets a list of all ACC numbers matching a query and returns them as a
-        list.
-        """
-        chunk = 10000  # 10000 is the maximum retmax allowed for ACC idtype
-        ids = []
-
-        for i in range(0, count, chunk):
-            success = False
-            if i > count:
-                i = count
-            while not success:
-                try:
-                    iter_handle = Entrez.efetch(db=self.database,
-                                                webenv=self.webenv,
-                                                query_key=self.query_key,
-                                                retmax=chunk,
-                                                rettype="acc", retstart=i)
-                    success = True
-                except urllib.error.HTTPError:
-                    print("Got an HTTPError. Let's wait 8'' and try again.")
-                    sleep(8)
-            if done_set is None:
-                ids += [x.rstrip() for x in iter_handle]
-            else:
-                query_ids = set([x.rstrip() for x in iter_handle])
-                irregular_ids = set([x.replace("_", "|") for x in query_ids])
-                regulars = query_ids.difference(done_set)
-                irregulars = irregular_ids.difference(done_set)
-                ids += list(regulars.intersection(irregulars))
-
-            iter_handle.close()
-
-        return ids
 
     def run_everything(self):
         """
@@ -325,15 +295,17 @@ class Downloader(object):
         Entrez.api_key = "bbceccfdf97b6b7e06e93c918e010f1ecf09"
         self.run = 1
 
-        count, self.query_key, self.webenv = self.ncbi_search(self.database, self.term)
-        ids = []
+        record = self.ncbi_search(self.database, self.term)
+        count = record["count"]
+        self.query_key = record["qkey"]
+        self.webenv = record["webenv"]
 
         if self.database == "genome":
             ids = self.translate_genome(count)
             count = len(ids)
             self.database = "nucleotide"
             self.run = 2
-        self.main_organizer(count, ids, batch_size)
+        self.main_organizer(count, batch_size)
 
 
 def main():
