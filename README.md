@@ -24,12 +24,11 @@ Pina-Martins, F., & Paulo, O. S. (2016). NCBI Mass Sequence Downloader–Large d
 ## Dependencies:
 * Python 3 (and the standard lib);
 * [PyQt5](http://www.riverbankcomputing.com/software/pyqt/intro) for the GUI version.
+* [Requests](https://github.com/psf/requests)
 
 
 ## License:
 GPLv3
-
-Biopython files (Entrez.py, Parser.py and py3k.py) are under the [Biopython License Agreement](http://www.biopython.org/DIST/LICENSE)
 
 ## Found a bug?
 Or would like a feature added? Or maybe drop some feedback?
