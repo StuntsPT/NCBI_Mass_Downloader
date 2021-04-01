@@ -2,3 +2,5 @@
 testfiles/*
 *.pyc
 Binaries/*
+build/*
+dist/*
