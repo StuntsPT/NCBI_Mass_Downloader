@@ -53,10 +53,15 @@ class Downloader():
                          "api_key": self.api_key}
 
         handle = requests.get(url, params=search_params)
-        record["qkey"] = handle.json()["esearchresult"]["querykey"]
-        record["webenv"] = handle.json()["esearchresult"]["webenv"]
-        record["count"] = int(handle.json()["esearchresult"]["count"])
-        record["accn"] = handle.json()["esearchresult"]["idlist"]
+        try:
+            record["qkey"] = handle.json()["esearchresult"]["querykey"]
+            record["webenv"] = handle.json()["esearchresult"]["webenv"]
+            record["count"] = int(handle.json()["esearchresult"]["count"])
+            record["accn"] = handle.json()["esearchresult"]["idlist"]
+        except KeyError:
+            err = handle.text
+            self.finish(False,
+                        "NCBI returned an error:\n" + err + "\nExiting.")
 
         if record["count"] == 0 and self.gui == 0:
             sys.exit("Your serch query returned no results!")
@@ -74,7 +79,7 @@ class Downloader():
         """
         try:
             stat(self.outfile).st_size != 0
-            missing_accns = self.missing_checker(count)
+            missing_accns = self.missing_checker()
             count = len(missing_accns)
         except OSError:
             missing_accns = None
@@ -82,7 +87,7 @@ class Downloader():
         self.actual_downloader(count, b_size, missing_accns, query_key, webenv)
 
 
-    def missing_checker(self, count):
+    def missing_checker(self):
         """
         Checks if any sequences did not download correctlly.
         If discrepancies between the downloaded sequences and the Accesions are
@@ -111,7 +116,6 @@ class Downloader():
 
         else:
             missing_ids = ncbi_accn_set - ver_ids
-
             return missing_ids
 
 
@@ -146,7 +150,7 @@ class Downloader():
         if accn is not None:
             accn = ",".join(accn)
             search_params["id"] = accn
-            handle = requests.post(url, params=search_params)
+            handle = requests.post(url, data=search_params)
 
         elif webenv != "":
             search_params["WebEnv"] = webenv
