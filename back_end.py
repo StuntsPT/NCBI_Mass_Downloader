@@ -21,6 +21,7 @@ import sys
 import re
 from os import stat
 from time import sleep
+from json import decoder
 
 import requests
 
@@ -38,7 +39,7 @@ class Downloader():
         self.original_count = 0
 
 
-    def ncbi_search(self, database, term, history="y", retmax=0):
+    def ncbi_search(self, database, term, history="y", retmax=0, retstart=0):
         """
         Submit search to NCBI and return the WebEnv & QueryKey.
         """
@@ -50,9 +51,11 @@ class Downloader():
                          "usehistory": history,
                          "idtype": "acc",
                          "retmax": retmax,
+                         "retstart": retstart,
                          "api_key": self.api_key}
 
         handle = requests.get(url, params=search_params)
+
         try:
             record["qkey"] = handle.json()["esearchresult"]["querykey"]
             record["webenv"] = handle.json()["esearchresult"]["webenv"]
@@ -84,7 +87,10 @@ class Downloader():
         except OSError:
             missing_accns = None
 
-        self.actual_downloader(count, b_size, missing_accns, query_key, webenv)
+        if missing_accns is not None:
+            webenv, query_key = self.artificial_history(missing_accns)
+
+        self.actual_downloader(count, b_size, query_key, webenv)
 
 
     def missing_checker(self):
@@ -96,10 +102,29 @@ class Downloader():
         """
         print("Checking for sequences that did not download... Please wait.")
         ver_ids = self.fasta_parser(self.outfile)
-        ncbi_accn_set = set(self.ncbi_search(self.database,
-                                             self.term,
-                                             "n",
-                                             self.original_count)["accn"])
+        if self.original_count <= 100000:
+            retmax = self.original_count
+        else:
+            retmax = 100000
+        ncbi_accn_set = set()
+        for i in range(0, self.original_count, retmax):
+            try:
+                subset = set(self.ncbi_search(self.database,
+                                              self.term,
+                                              "n",
+                                              retmax=retmax,
+                                              retstart=i)["accn"])
+                ncbi_accn_set = ncbi_accn_set.union(subset)
+            except decoder.JSONDecodeError:
+                sleep(8)
+                print("Got an empty reply from NCBI."
+                      " Let's wait 8'' and try again.")
+                subset = set(self.ncbi_search(self.database,
+                                              self.term,
+                                              "n",
+                                              retmax=retmax,
+                                              retstart=i)["accn"])
+                ncbi_accn_set = ncbi_accn_set.union(subset)
 
         # Remove any Master records from the accn set:
         # See https://www.biostars.org/p/305310/#305317
@@ -135,32 +160,47 @@ class Downloader():
         return verified_ids
 
 
-    def use_efetch(self, start, b_size, webenv = "", query_key = "", accn=None):
+    def use_efetch(self, start, b_size, webenv, query_key):
         """
         Fetches NCBI data based on the provided search query or acession
         numbers. Returns the fasta string (or XML in case of erros).
         """
         # record = {}
         url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
-        search_params = {"db": self.database,
+        fetch_params = {"db": self.database,
                          "retmode": "text",
                          "rettype": "fasta",
-                         "api_key": self.api_key}
+                         "api_key": self.api_key,
+                         "WebEnv": webenv,
+                         "query_key": query_key,
+                         "retstart": start,
+                         "retmax": b_size,
+                         "term": self.term}
 
-        if accn is not None:
-            accn = ",".join(accn)
-            search_params["id"] = accn
-            handle = requests.post(url, data=search_params)
-
-        elif webenv != "":
-            search_params["WebEnv"] = webenv
-            search_params["query_key"] = query_key
-            search_params["retstart"] = start
-            search_params["retmax"] = b_size
-            search_params["term"] = self.term
-            handle = requests.get(url, params=search_params)
+        handle = requests.get(url, params=fetch_params)
 
         return handle.text
+
+
+    def artificial_history(self, accns):
+        """
+        Takes a list of accn numbers, posts it to NCBI to generate an
+        'artificial' history (webenv and query_key). This avoids download by
+        accn, and works around the protein issue.
+        """
+        url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/epost.fcgi"
+        accns = ",".join(accns)
+        post_params = {"db": self.database,
+                       "api_key": self.api_key,
+                       "id": accns}
+        handle = requests.post(url, data=post_params)
+
+        webenv = re.search("<WebEnv>.*</WebEnv>",
+                           handle.text).group()[8:-9]
+        query_key = re.search("<QueryKey>.*</QueryKey>",
+                              handle.text).group()[10:-11]
+
+        return webenv, query_key
 
 
     def translate_genome(self, count):
@@ -209,7 +249,7 @@ class Downloader():
                                    "list." % (self.outfile))
 
 
-    def actual_downloader(self, count, b_size, missing_accns, query_key, webenv):
+    def actual_downloader(self, count, b_size, query_key, webenv):
         """
         Manages downloads
         """
@@ -232,15 +272,10 @@ class Downloader():
             attempt = 0
             while attempt < 5:
                 try:
-                    if missing_accns is None:
-                        data = self.use_efetch(start,
-                                               b_size,
-                                               webenv=webenv,
-                                               query_key=query_key)
-                    else:
-                        data = self.use_efetch(start,
-                                               b_size,
-                                               accn = missing_accns)
+                    data = self.use_efetch(start,
+                                           b_size,
+                                           webenv=webenv,
+                                           query_key=query_key)
                     if data.startswith("<?"):
                         raise ValueError("NCBI server error.")
                     data = data.replace("\n\n", "\n")
