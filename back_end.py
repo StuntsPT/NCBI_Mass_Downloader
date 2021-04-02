@@ -102,10 +102,9 @@ class Downloader():
         """
         print("Checking for sequences that did not download... Please wait.")
         ver_ids = self.fasta_parser(self.outfile)
-        if self.original_count <= 100000:
+        retmax = 100000
+        if self.original_count <= retmax:
             retmax = self.original_count
-        else:
-            retmax = 100000
         ncbi_accn_set = set()
         for i in range(0, self.original_count, retmax):
             if i + retmax < self.original_count:
@@ -123,6 +122,7 @@ class Downloader():
                                                   retmax=retmax,
                                                   retstart=i)["accn"])
                     ncbi_accn_set = ncbi_accn_set.union(subset)
+                    break
                 except decoder.JSONDecodeError:
                     print("Got an empty reply from NCBI."
                           " Let's wait 8'' and try again.")
@@ -305,7 +305,7 @@ class Downloader():
         """
         Run the functions in order.
         """
-        batch_size = 10000
+        batch_size = 5000
         self.api_key = "bbceccfdf97b6b7e06e93c918e010f1ecf09"
         self.run = 1
 
