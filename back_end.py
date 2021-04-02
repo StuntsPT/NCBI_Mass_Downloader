@@ -302,7 +302,7 @@ class Downloader():
         """
         Run the functions in order.
         """
-        batch_size = 3000
+        batch_size = 10000
         self.api_key = "bbceccfdf97b6b7e06e93c918e010f1ecf09"
         self.run = 1
 
