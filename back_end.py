@@ -108,23 +108,26 @@ class Downloader():
             retmax = 100000
         ncbi_accn_set = set()
         for i in range(0, self.original_count, retmax):
-            try:
-                subset = set(self.ncbi_search(self.database,
-                                              self.term,
-                                              "n",
-                                              retmax=retmax,
-                                              retstart=i)["accn"])
-                ncbi_accn_set = ncbi_accn_set.union(subset)
-            except decoder.JSONDecodeError:
-                sleep(8)
-                print("Got an empty reply from NCBI."
-                      " Let's wait 8'' and try again.")
-                subset = set(self.ncbi_search(self.database,
-                                              self.term,
-                                              "n",
-                                              retmax=retmax,
-                                              retstart=i)["accn"])
-                ncbi_accn_set = ncbi_accn_set.union(subset)
+            if i + retmax < self.original_count:
+                end = i + retmax
+            else:
+                end = self.original_count
+            print("Downloading accession %i to %i of "
+                  "%i" % (i + 1, end, self.original_count))
+            attempt = 0
+            while attempt < 5:
+                try:
+                    subset = set(self.ncbi_search(self.database,
+                                                  self.term,
+                                                  "n",
+                                                  retmax=retmax,
+                                                  retstart=i)["accn"])
+                    ncbi_accn_set = ncbi_accn_set.union(subset)
+                except decoder.JSONDecodeError:
+                    print("Got an empty reply from NCBI."
+                          " Let's wait 8'' and try again.")
+                    attempt += 1
+                    sleep(8)
 
         # Remove any Master records from the accn set:
         # See https://www.biostars.org/p/305310/#305317
@@ -276,12 +279,12 @@ class Downloader():
                                            b_size,
                                            webenv=webenv,
                                            query_key=query_key)
-                    if data.startswith("<?"):
+                    if not data.startswith(">"):
                         raise ValueError("NCBI server error.")
                     data = data.replace("\n\n", "\n")
                     break
                 except ValueError:
-                    print("NCBI is retuning XML instead of sequence "
+                    print("NCBI is not retuning sequence "
                           "data. Trying the same chunk again in 8\'\'.")
                     attempt += 1
                     sleep(8)
