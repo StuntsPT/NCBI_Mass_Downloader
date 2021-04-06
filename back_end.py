@@ -26,6 +26,13 @@ from json import decoder
 import requests
 
 
+class TerminatedByUser(Exception):
+    """
+    Simple class to raise a custom error (terminated by user)
+    """
+    pass
+
+
 class Downloader():
     def __init__(self, database, term, outfile, gui):
         self.database = database
@@ -37,12 +44,15 @@ class Downloader():
         self.run = 0
         self.api_key = ""
         self.original_count = 0
+        self.terminated = False
 
 
     def ncbi_search(self, database, term, history="y", retmax=0, retstart=0):
         """
         Submit search to NCBI and return the WebEnv & QueryKey.
         """
+        if self.terminated is True:
+            return
         record = {}
         url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
         search_params = {"db": database,
@@ -65,6 +75,7 @@ class Downloader():
             err = handle.text
             self.finish(False,
                         "NCBI returned an error:\n" + err + "\nExiting.")
+            return 0
 
         if record["count"] == 0 and self.gui == 0:
             sys.exit("Your serch query returned no results!")
@@ -86,6 +97,8 @@ class Downloader():
             count = len(missing_accns)
         except OSError:
             missing_accns = None
+        except TypeError:
+            return
 
         if missing_accns is not None:
             webenv, query_key = self.artificial_history(missing_accns)
@@ -141,10 +154,11 @@ class Downloader():
 
         if ver_ids == ncbi_accn_set:
             self.finish(success=True)
+            return 0
 
-        else:
-            missing_ids = ncbi_accn_set - ver_ids
-            return missing_ids
+        missing_ids = ncbi_accn_set - ver_ids
+
+        return missing_ids
 
 
     def fasta_parser(self, target_file):
@@ -168,7 +182,8 @@ class Downloader():
         Fetches NCBI data based on the provided search query or acession
         numbers. Returns the fasta string (or XML in case of erros).
         """
-        # record = {}
+        if self.terminated is True:
+            raise TerminatedByUser
         url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
         fetch_params = {"db": self.database,
                          "retmode": "text",
@@ -191,45 +206,47 @@ class Downloader():
         'artificial' history (webenv and query_key). This avoids download by
         accn, and works around the protein issue.
         """
+        if self.terminated is True:
+            raise TerminatedByUser
         url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/epost.fcgi"
-        accns = ",".join(accns)
-        post_params = {"db": self.database,
-                       "api_key": self.api_key,
-                       "id": accns}
-        handle = requests.post(url, data=post_params)
-
-        webenv = re.search("<WebEnv>.*</WebEnv>",
-                           handle.text).group()[8:-9]
-        query_key = re.search("<QueryKey>.*</QueryKey>",
-                              handle.text).group()[10:-11]
+        max_batch = 1000
+        if len(accns) < max_batch:
+            max_batch = len(accns)
+        webenv = None
+        accn_list = list(accns)
+        start = 0
+        for i in range(max_batch, len(accns), max_batch):
+            if self.terminated is True:
+                return
+            accns = ",".join(accn_list[start:i])
+            start = i
+            post_params = {"db": self.database,
+                           "api_key": self.api_key}
+            if webenv is not None:
+                post_params["WebEnv"] = webenv
+            handle = requests.post(url, params=post_params, data={"id": accns})
+            print(handle.text)
+            webenv = re.search("<WebEnv>.*</WebEnv>",
+                               handle.text).group()[8:-9]
+            query_key = re.search("<QueryKey>.*</QueryKey>",
+                                  handle.text).group()[10:-11]
 
         return webenv, query_key
 
 
-    def translate_genome(self, count):
+    def genome_deprecation(self):
         """
-        Translates genome query IDs into a nucleotide query IDs, since NCBI has
-        deprecated the use of the "genome" database, and the old genome IDs.
-        http://www.ncbi.nlm.nih.gov/books/NBK25499/
+        Emits a message on how to obtian genomes from NCBI.
         """
-        import urllib
+        message = ("NCBI has deprecated the 'Genomes' dataset from e-utils. "
+                  "The cannonical way to get genome data is currently to use "
+                  "their 'Datasets' utility:\n"
+                  "https://www.ncbi.nlm.nih.gov/datasets/genomes/\n\n"
+                  "For more information please visit 'NCBI Insights':\n"
+                  "https://ncbiinsights.ncbi.nlm.nih.gov/2020/09/10/genomic-data/")
 
-        ids = self.id_fetcher(count)
-
-        nuc_acc_list = []
-        query_url = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/" + \
-                    "elink.fcgi?dbfrom=genome&db=nucleotide&id="
-        for genome_id in ids:
-            tmplist = []
-            xml = urllib.request.urlopen(query_url + genome_id)
-            for content in xml:
-                if content.endswith(b"</Id>\n"):
-                    gid = re.search("<Id>.*</Id>",
-                                    content.decode('utf-8')).group()[4:-5]
-                    tmplist.append(gid)
-            nuc_acc_list += tmplist[1:]
-
-        return nuc_acc_list
+        self.finish(False, message)
+        return 0
 
 
     def finish(self, success, msg=""):
@@ -242,14 +259,13 @@ class Downloader():
                 sys.exit("Program finished without error.")
             else:
                 self.finished.emit("Download finished successfully!")
+
         else:
             if self.gui == 0:
                 sys.exit("Program finished with some failures.\n" + msg)
             else:
-                self.finished.emit("Download finished with some "
-                                   "failures!\nPlease check the file "
-                                   "%s.failed for a detailed "
-                                   "list." % (self.outfile))
+                self.finished.emit("Program finished with some "
+                                   "failures.\n" + msg)
 
 
     def actual_downloader(self, count, b_size, query_key, webenv):
@@ -294,6 +310,8 @@ class Downloader():
                             "again. (If you use the same output "
                             "file, your download will resume from "
                             "where it left off.")
+                outfile.close()
+                return
 
             outfile.write(data)
 
@@ -305,22 +323,22 @@ class Downloader():
         """
         Run the functions in order.
         """
-        batch_size = 5000
-        self.api_key = "bbceccfdf97b6b7e06e93c918e010f1ecf09"
-        self.run = 1
+        try:
+            if self.database == "genome":
+                self.genome_deprecation()
+                return
 
-        record = self.ncbi_search(self.database, self.term)
-        count = record["count"]
-        self.original_count = count
+            batch_size = 5000
+            self.api_key = "bbceccfdf97b6b7e06e93c918e010f1ecf09"
+            self.run = 1
 
-        if self.database == "genome":
-            ids = self.translate_genome(count)
-            count = len(ids)
-            self.database = "nucleotide"
-            self.run = 2
+            record = self.ncbi_search(self.database, self.term)
+            count = record["count"]
+            self.original_count = count
 
-        self.main_organizer(count, batch_size, record["qkey"], record["webenv"])
-
+            self.main_organizer(count, batch_size, record["qkey"], record["webenv"])
+        except TerminatedByUser:
+            return
 
 def main():
     """
