@@ -28,7 +28,7 @@ from json import decoder
 import requests
 
 
-class TerminatedByUser(Exception):
+class ProgramDone(Exception):
     """
     Simple class to raise a custom error (terminated by user)
     """
@@ -176,7 +176,6 @@ class Downloader():
 
         if ver_ids == ncbi_accn_set:
             self.finish(success=True)
-            return 0
 
         missing_ids = ncbi_accn_set - ver_ids
 
@@ -205,7 +204,7 @@ class Downloader():
         numbers. Returns the fasta string (or XML in case of erros).
         """
         if self.terminated is True:
-            raise TerminatedByUser
+            raise ProgramDone
         url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
         fetch_params = {"db": self.database,
                          "retmode": "text",
@@ -233,7 +232,7 @@ class Downloader():
         https://www.biostars.org/p/476638/
         """
         if self.terminated is True:
-            raise TerminatedByUser
+            raise ProgramDone
         url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/epost.fcgi"
         max_batch = 200
         if len(accns) < max_batch:
@@ -292,6 +291,7 @@ class Downloader():
                 sys.exit("Program finished without error.")
             else:
                 self.finished.emit("Download finished successfully!")
+                raise ProgramDone
 
         else:
             if self.gui == 0:
@@ -299,6 +299,7 @@ class Downloader():
             else:
                 self.finished.emit("Program finished with some "
                                    "failures.\n" + msg)
+                raise ProgramDone
 
 
     def actual_downloader(self, count, b_size, query_keys, webenv):
@@ -378,7 +379,7 @@ class Downloader():
             self.original_count = count
 
             self.main_organizer(count, batch_size, record["qkey"], record["webenv"])
-        except TerminatedByUser:
+        except ProgramDone:
             return
 
 def main():
