@@ -19,6 +19,8 @@
 
 import sys
 import re
+import tempfile
+import pickle
 from os import stat
 from time import sleep
 from json import decoder
@@ -45,6 +47,7 @@ class Downloader():
         self.api_key = ""
         self.original_count = 0
         self.terminated = False
+        self.accn_cache = tempfile.TemporaryFile()
 
 
     def ncbi_search(self, database, term, history="y", retmax=0, retstart=0):
@@ -92,13 +95,20 @@ class Downloader():
         writes the sequences into the outfile.
         """
         try:
-            stat(self.outfile).st_size != 0
-            missing_accns = self.missing_checker()
-            count = len(missing_accns)
+            stat(self.outfile).st_size
+            file_exists = True
         except OSError:
             missing_accns = None
+            file_exists = False
         except TypeError:
             return
+        if file_exists:
+            if stat(self.outfile).st_size != 0:
+                missing_accns = self.missing_checker()
+                count = len(missing_accns)
+            else:
+                missing_accns = None
+
 
         if missing_accns is not None:
             webenv, query_keys = self.artificial_history(missing_accns)
@@ -115,42 +125,54 @@ class Downloader():
         """
         print("Checking for sequences that did not download... Please wait.")
         ver_ids = self.fasta_parser(self.outfile)
-        retmax = 100000
-        if self.original_count <= retmax:
-            retmax = self.original_count
-        ncbi_accn_set = set()
-        for i in range(0, self.original_count, retmax):
-            if i + retmax < self.original_count:
-                end = i + retmax
-            else:
-                end = self.original_count
-            print("Downloading accession %i to %i of "
-                  "%i" % (i + 1, end, self.original_count))
-            attempt = 0
-            while attempt < 5:
-                try:
-                    subset = set(self.ncbi_search(self.database,
-                                                  self.term,
-                                                  "n",
-                                                  retmax=retmax,
-                                                  retstart=i)["accn"])
-                    ncbi_accn_set = ncbi_accn_set.union(subset)
-                    break
-                except decoder.JSONDecodeError:
-                    print("Got an empty reply from NCBI."
-                          " Let's wait 8'' and try again.")
-                    attempt += 1
-                    sleep(8)
+        if self.accn_cache.tell() != 0:
+            # If accecsion numbers are cached, just load them instead of
+            # downloading them again
+            self.accn_cache.seek(0)
+            ncbi_accn_set = pickle.load(self.accn_cache)
+            print("Using cached accession numbers.")
+        else:
+            retmax = 100000
+            if self.original_count <= retmax:
+                retmax = self.original_count
+            ncbi_accn_set = set()
+            for i in range(0, self.original_count, retmax):
+                if i + retmax < self.original_count:
+                    end = i + retmax
+                else:
+                    end = self.original_count
+                print("Downloading accession %i to %i of "
+                      "%i" % (i + 1, end, self.original_count))
+                attempt = 0
+                while attempt < 5:
+                    try:
+                        subset = set(self.ncbi_search(self.database,
+                                                      self.term,
+                                                      "n",
+                                                      retmax=retmax,
+                                                      retstart=i)["accn"])
+                        ncbi_accn_set = ncbi_accn_set.union(subset)
+                        break
+                    except decoder.JSONDecodeError:
+                        print("Got an empty reply from NCBI."
+                              " Let's wait 8'' and try again.")
+                        attempt += 1
+                        sleep(8)
 
-        # Remove any Master records from the accn set:
-        # See https://www.biostars.org/p/305310/#305317
-        master_records = set()
-        for accn in ncbi_accn_set:
-            if bool(re.search('[A-Z]{4}0+(\.\d){0,}$', accn)):
-                master_records.add(accn)
-                print("WARNING: Master record found and "
-                      "removed: %s." % (accn))
-        ncbi_accn_set = ncbi_accn_set - master_records
+            # Remove any Master records from the accn set:
+            # See https://www.biostars.org/p/305310/#305317
+            master_records = set()
+            for accn in ncbi_accn_set:
+                if bool(re.search('[A-Z]{4}0+(\.\d){0,}$', accn)):
+                    master_records.add(accn)
+                    print("WARNING: Master record found and "
+                          "removed: %s." % (accn))
+            ncbi_accn_set = ncbi_accn_set - master_records
+
+            # Create an accecsion number cache. This should avoid subsequent
+            # accession number downloads.
+            pickle.dump(ncbi_accn_set, self.accn_cache, pickle.HIGHEST_PROTOCOL)
+
 
         if ver_ids == ncbi_accn_set:
             self.finish(success=True)
@@ -194,10 +216,13 @@ class Downloader():
                          "retstart": start,
                          "retmax": b_size,
                          "term": self.term}
+        try:
+            handle = requests.get(url, params=fetch_params)
+            fasta = handle.text
+        except requests.exceptions.ChunkedEncodingError:
+            fasta = "Empty string"
 
-        handle = requests.get(url, params=fetch_params)
-
-        return handle.text
+        return fasta
 
 
     def artificial_history(self, accns):
