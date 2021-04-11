@@ -67,7 +67,7 @@ class Downloader():
         handle = requests.get(url, params=search_params)
 
         try:
-            record["qkey"] = handle.json()["esearchresult"]["querykey"]
+            record["qkey"] = [handle.json()["esearchresult"]["querykey"]]
             record["webenv"] = handle.json()["esearchresult"]["webenv"]
             record["count"] = int(handle.json()["esearchresult"]["count"])
             record["accn"] = handle.json()["esearchresult"]["idlist"]
@@ -86,7 +86,7 @@ class Downloader():
         return record
 
 
-    def main_organizer(self, count, b_size, query_key, webenv):
+    def main_organizer(self, count, b_size, query_keys, webenv):
         """
         Defines what tasks need to be performed, handles NCBI server errors and
         writes the sequences into the outfile.
@@ -101,9 +101,9 @@ class Downloader():
             return
 
         if missing_accns is not None:
-            webenv, query_key = self.artificial_history(missing_accns)
+            webenv, query_keys = self.artificial_history(missing_accns)
 
-        self.actual_downloader(count, b_size, query_key, webenv)
+        self.actual_downloader(count, b_size, query_keys, webenv)
 
 
     def missing_checker(self):
@@ -204,34 +204,42 @@ class Downloader():
         """
         Takes a list of accn numbers, posts it to NCBI to generate an
         'artificial' history (webenv and query_key). This avoids download by
-        accn, and works around the protein issue.
+        accn, and works around the protein issue described here:
+        https://www.biostars.org/p/476638/
         """
         if self.terminated is True:
             raise TerminatedByUser
         url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/epost.fcgi"
-        max_batch = 1000
+        max_batch = 200
         if len(accns) < max_batch:
             max_batch = len(accns)
         webenv = None
+        query_keys = []
         accn_list = list(accns)
-        start = 0
-        for i in range(max_batch, len(accns), max_batch):
+        for i in range(0, len(accns), max_batch):
             if self.terminated is True:
                 return
-            accns = ",".join(accn_list[start:i])
-            start = i
+            if i + max_batch < len(accns):
+                end = i + max_batch
+            else:
+                end = len(accns)
+            accns_str = ",".join(accn_list[i:end])
+            #start = i
             post_params = {"db": self.database,
                            "api_key": self.api_key}
             if webenv is not None:
                 post_params["WebEnv"] = webenv
-            handle = requests.post(url, params=post_params, data={"id": accns})
-            print(handle.text)
-            webenv = re.search("<WebEnv>.*</WebEnv>",
-                               handle.text).group()[8:-9]
+            handle = requests.post(url,
+                                   params=post_params,
+                                   data={"id": accns_str})
+            if webenv is None:
+                webenv = re.search("<WebEnv>.*</WebEnv>",
+                                   handle.text).group()[8:-9]
             query_key = re.search("<QueryKey>.*</QueryKey>",
                                   handle.text).group()[10:-11]
+            query_keys.append(query_key)
 
-        return webenv, query_key
+        return webenv, query_keys
 
 
     def genome_deprecation(self):
@@ -268,10 +276,11 @@ class Downloader():
                                    "failures.\n" + msg)
 
 
-    def actual_downloader(self, count, b_size, query_key, webenv):
+    def actual_downloader(self, count, b_size, query_keys, webenv):
         """
         Manages downloads
         """
+        key_step = 0
         outfile = open(self.outfile, 'a')
         if b_size > count:
             b_size = count
@@ -285,6 +294,13 @@ class Downloader():
             if self.gui == 1:
                 self.max_seq.emit(count)
                 self.prog_data.emit(end)
+
+            if len(query_keys) > 1:
+                query_key = query_keys[key_step]
+                key_step += 1
+                start = 0
+            else:
+                query_key = query_keys[0]
 
             # Make sure that the program carries on despite server
             # "hammering" errors.
@@ -316,7 +332,7 @@ class Downloader():
             outfile.write(data)
 
         outfile.close()
-        self.main_organizer(count, b_size, query_key, webenv)
+        self.main_organizer(count, b_size, query_keys, webenv)
 
 
     def run_everything(self):
@@ -328,7 +344,7 @@ class Downloader():
                 self.genome_deprecation()
                 return
 
-            batch_size = 5000
+            batch_size = 200
             self.api_key = "bbceccfdf97b6b7e06e93c918e010f1ecf09"
             self.run = 1
 
