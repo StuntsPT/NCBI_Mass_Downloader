@@ -7,7 +7,7 @@ Note that not all versions get a binary build. Sometimes this happens because tw
 ## Build system
 Binaries for all platforms (GNU/Linux, Windows & OSX) are built using [pyinstaller](http://www.pyinstaller.org/).
 Pyinstaller can be installed on any OS via PIP `pip install pyinstaller`.
-On windows, the python 3 version is recommended since PyQt only has python 3 (python 3.4, to be specific) binaries available for this platform.
+On windows, the python 3 version is recommended since PyQt only has python 3 (python 3.6, to be specific) binaries available for this platform.
 
 ## How to build them
 Binaries are built using the following options:
@@ -19,7 +19,7 @@ pyinstaller -F -w NCBI_downloader.py
 
 (Windows)
 ```powershell
-C:\Python34\scripts\pyinstaller.exe -F -w -i assets/Icon.ico NCBI_downloader.py
+C:\Python36\scripts\pyinstaller.exe -F -w -i assets/Icon.ico NCBI_downloader.py
 ```
 
 (OSX)
@@ -28,10 +28,10 @@ pyinstaller -F -w -i assets/Icon.png NCBI_downloader.py
 ```
 
 * The "-F" option will bundle all the used libs in a single file.
-* The "-w" option will disable opening a console window to display STDOUT and STDERR (eg. the program will only spawn the GUI window).
+* The "-w" option will disable opening a console window to display `STDOUT` and `STDERR` (eg. the program will only spawn the GUI window).
 * The "-i" option used in the Windows and OSX builds will bundle the picture in `assets` with the executable file.
 
-The produced binaries are then bundled with the XSDs and DTDs directories, license files and README.md in a compressed file which is then uploaded to the respective release page in github.
+The produced binaries are then bundled with license files and `README.md` in a compressed file which is then uploaded to the respective release page in github.
 
 For OSX, instead of bundling the executable file with the above mentioned files, the ".app" directory is bundled. This is done so that it's possible to run the program with a "double click" on OSX.
 
