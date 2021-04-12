@@ -41,10 +41,8 @@ class Downloader():
         self.term = term
         self.outfile = outfile
         self.gui = gui
-        self.failures = [[], 0]
         super(Downloader, self).__init__()
-        self.run = 0
-        self.api_key = ""
+        self.api_key = "bbceccfdf97b6b7e06e93c918e010f1ecf09"
         self.original_count = 0
         self.terminated = False
         self.accn_cache = tempfile.TemporaryFile()
@@ -419,8 +417,6 @@ class Downloader():
                 return
 
             batch_size = 200
-            self.api_key = "bbceccfdf97b6b7e06e93c918e010f1ecf09"
-            self.run = 1
 
             record = self.ncbi_search(self.database, self.term)
             count = record["count"]
