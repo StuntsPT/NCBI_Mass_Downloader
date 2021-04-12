@@ -67,7 +67,7 @@ class Downloader():
                          "retstart": retstart,
                          "api_key": self.api_key}
 
-        handle = requests.get(url, params=search_params)
+        handle = requests.get(url, params=search_params, timeout=30)
 
         try:
             record["qkey"] = [handle.json()["esearchresult"]["querykey"]]
@@ -153,8 +153,9 @@ class Downloader():
                                                       retstart=i)["accn"])
                         ncbi_accn_set = ncbi_accn_set.union(subset)
                         break
-                    except decoder.JSONDecodeError:
-                        print("Got an empty reply from NCBI."
+                    except (decoder.JSONDecodeError,
+                            requests.exceptions.Timeout):
+                        print("Got an empty reply or a Timeout from NCBI."
                               " Let's wait 8'' and try again.")
                         attempt += 1
                         sleep(8)
@@ -216,9 +217,10 @@ class Downloader():
                          "retmax": b_size,
                          "term": self.term}
         try:
-            handle = requests.get(url, params=fetch_params)
+            handle = requests.get(url, params=fetch_params, timeout=30)
             fasta = handle.text
-        except requests.exceptions.ChunkedEncodingError:
+        except (requests.exceptions.ChunkedEncodingError,
+                requests.exceptions.Timeout):
             fasta = "Empty string"
 
         return fasta
@@ -240,6 +242,8 @@ class Downloader():
         webenv = None
         query_keys = []
         accn_list = list(accns)
+        print("Creating an aritificial 'history' to work around direct "
+              "accession number download.")
         for i in range(0, len(accns), max_batch):
             if self.terminated is True:
                 return
@@ -247,15 +251,29 @@ class Downloader():
                 end = i + max_batch
             else:
                 end = len(accns)
+
+            print("Uploading accessions %i to %i of %i" % (i + 1,
+                                                           end,
+                                                           len(accns)))
+
             accns_str = ",".join(accn_list[i:end])
             #start = i
             post_params = {"db": self.database,
                            "api_key": self.api_key}
             if webenv is not None:
                 post_params["WebEnv"] = webenv
-            handle = requests.post(url,
-                                   params=post_params,
-                                   data={"id": accns_str})
+            try:
+                handle = requests.post(url,
+                                       params=post_params,
+                                       data={"id": accns_str},
+                                       timeout=30)
+            except requests.exceptions.Timeout:
+                print("Got a timeout. Let's wait 8'' and try again...")
+                sleep(8)
+                handle = requests.post(url,
+                                       params=post_params,
+                                       data={"id": accns_str},
+                                       timeout=30)
             if webenv is None:
                 webenv = re.search("<WebEnv>.*</WebEnv>",
                                    handle.text).group()[8:-9]
