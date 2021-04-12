@@ -98,118 +98,6 @@ class Downloader():
 
         return record
 
-
-    def main_organizer(self, count, b_size, query_key, webenv):
-        """
-        Defines what tasks need to be performed, handles NCBI server errors and
-        writes the sequences into the outfile.
-        """
-        try:
-            stat(self.outfile).st_size
-            file_exists = True
-        except OSError:
-            missing_accns = None
-            file_exists = False
-        except TypeError:
-            return
-        if file_exists:
-            if stat(self.outfile).st_size != 0:
-                missing_accns = self.missing_checker()
-                count = len(missing_accns)
-            else:
-                missing_accns = None
-
-
-        if missing_accns is not None:
-            self.artificial_history(missing_accns)
-        else:
-            self.actual_downloader(count, b_size, query_key, webenv)
-
-
-    def missing_checker(self):
-        """
-        Checks if any sequences did not download correctlly.
-        If discrepancies between the downloaded sequences and the Accesions are
-        found, a new missing sequences list is generated and an
-        attempt is made to fetch the missing sequences.
-        """
-        print("Checking for sequences that did not download... Please wait.")
-        ver_ids = self.fasta_parser(self.outfile)
-        if self.accn_cache.tell() != 0:
-            # If accecsion numbers are cached, just load them instead of
-            # downloading them again
-            self.accn_cache.seek(0)
-            ncbi_accn_set = pickle.load(self.accn_cache)
-            print("Using cached accession numbers.")
-        else:
-            retmax = 50000
-            if self.original_count <= retmax:
-                retmax = self.original_count
-            ncbi_accn_set = set()
-            for i in range(0, self.original_count, retmax):
-                if i + retmax < self.original_count:
-                    end = i + retmax
-                else:
-                    end = self.original_count
-                print("Downloading accession %i to %i of "
-                      "%i" % (i + 1, end, self.original_count))
-                attempt = 0
-                while attempt < 5:
-                    try:
-                        subset = set(self.ncbi_search(self.database,
-                                                      self.term,
-                                                      "n",
-                                                      retmax=retmax,
-                                                      retstart=i)["accn"])
-                        ncbi_accn_set = ncbi_accn_set.union(subset)
-                        break
-                    except (decoder.JSONDecodeError,
-                            requests.exceptions.Timeout,
-                            requests.exceptions.ChunkedEncodingError):
-                        print("Got an empty reply or a Timeout from NCBI."
-                              " Let's wait 8'' and try again.")
-                        attempt += 1
-                        sleep(8)
-
-            # Remove any Master records from the accn set:
-            # See https://www.biostars.org/p/305310/#305317
-            master_records = set()
-            for accn in ncbi_accn_set:
-                if bool(re.search('[A-Z]{4}0+(\.\d){0,}$', accn)):
-                    master_records.add(accn)
-                    print("WARNING: Master record found and "
-                          "removed: %s." % (accn))
-            ncbi_accn_set = ncbi_accn_set - master_records
-
-            # Create an accecsion number cache. This should avoid subsequent
-            # accession number downloads.
-            pickle.dump(ncbi_accn_set, self.accn_cache, pickle.HIGHEST_PROTOCOL)
-
-
-        if ver_ids == ncbi_accn_set:
-            self.finish(success=True)
-
-        missing_ids = ncbi_accn_set - ver_ids
-
-        return missing_ids
-
-
-    def fasta_parser(self, target_file):
-        """
-        Parses a FASTA file and retruns a set of found Accession numbers
-        """
-        target_handle = open(target_file, 'r')
-        verified_ids = set()
-
-        for lines in target_handle:
-            if lines.startswith(">"):
-                seqid = re.match("([^\s]+)", lines).group(0)[1:]
-                verified_ids.add(seqid)
-
-        target_handle.close()
-        return verified_ids
-
-
     def use_efetch(self, start, b_size, webenv, query_key):
         """
         Fetches NCBI data based on the provided search query or acession
@@ -290,6 +178,107 @@ class Downloader():
                               handle.text).group()[10:-11]
 
         return webenv, query_key
+
+
+    def main_organizer(self, count, b_size, query_key, webenv):
+        """
+        Defines what tasks need to be performed, handles NCBI server errors and
+        writes the sequences into the outfile.
+        """
+        try:
+            stat(self.outfile).st_size
+            file_exists = True
+        except OSError:
+            missing_accns = None
+            file_exists = False
+        except TypeError:
+            return
+        if file_exists:
+            if stat(self.outfile).st_size != 0:
+                missing_accns = self.missing_checker()
+                count = len(missing_accns)
+            else:
+                missing_accns = None
+
+
+        if missing_accns is not None:
+            self.artificial_history(missing_accns)
+        else:
+            self.actual_downloader(count, b_size, query_key, webenv)
+
+
+    def missing_checker(self):
+        """
+        Checks if any sequences did not download correctlly.
+        If discrepancies between the downloaded sequences and the Accesions are
+        found, a new missing sequences list is generated and an
+        attempt is made to fetch the missing sequences.
+        """
+        print("Checking for sequences that did not download... Please wait.")
+        ver_ids = self.fasta_parser(self.outfile)
+        if self.accn_cache.tell() != 0:
+            # If accecsion numbers are cached, just load them instead of
+            # downloading them again
+            self.accn_cache.seek(0)
+            ncbi_accn_set = pickle.load(self.accn_cache)
+            print("Using cached accession numbers.")
+        else:
+            retmax = 50000
+            if self.original_count <= retmax:
+                retmax = self.original_count
+            ncbi_accn_set = set()
+            for i in range(0, self.original_count, retmax):
+                if i + retmax < self.original_count:
+                    end = i + retmax
+                else:
+                    end = self.original_count
+                print("Downloading accession %i to %i of "
+                      "%i" % (i + 1, end, self.original_count))
+
+                subset = set(self.ncbi_search(self.database,
+                                              self.term,
+                                              "n",
+                                              retmax=retmax,
+                                              retstart=i)["accn"])
+                ncbi_accn_set = ncbi_accn_set.union(subset)
+
+            # Remove any Master records from the accn set:
+            # See https://www.biostars.org/p/305310/#305317
+            master_records = set()
+            for accn in ncbi_accn_set:
+                if bool(re.search('[A-Z]{4}0+(\.\d){0,}$', accn)):
+                    master_records.add(accn)
+                    print("WARNING: Master record found and "
+                          "removed: %s." % (accn))
+            ncbi_accn_set = ncbi_accn_set - master_records
+
+            # Create an accecsion number cache. This should avoid subsequent
+            # accession number downloads.
+            pickle.dump(ncbi_accn_set, self.accn_cache, pickle.HIGHEST_PROTOCOL)
+
+
+        if ver_ids == ncbi_accn_set:
+            self.finish(success=True)
+
+        missing_ids = ncbi_accn_set - ver_ids
+
+        return missing_ids
+
+
+    def fasta_parser(self, target_file):
+        """
+        Parses a FASTA file and retruns a set of found Accession numbers
+        """
+        target_handle = open(target_file, 'r')
+        verified_ids = set()
+
+        for lines in target_handle:
+            if lines.startswith(">"):
+                seqid = re.match("([^\s]+)", lines).group(0)[1:]
+                verified_ids.add(seqid)
+
+        target_handle.close()
+        return verified_ids
 
 
     def artificial_history(self, accns):
