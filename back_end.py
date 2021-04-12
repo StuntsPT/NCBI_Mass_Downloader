@@ -132,7 +132,7 @@ class Downloader():
             ncbi_accn_set = pickle.load(self.accn_cache)
             print("Using cached accession numbers.")
         else:
-            retmax = 100000
+            retmax = 50000
             if self.original_count <= retmax:
                 retmax = self.original_count
             ncbi_accn_set = set()
