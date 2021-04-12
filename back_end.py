@@ -67,18 +67,30 @@ class Downloader():
                          "retstart": retstart,
                          "api_key": self.api_key}
 
-        handle = requests.get(url, params=search_params, timeout=30)
-
-        try:
-            record["qkey"] = [handle.json()["esearchresult"]["querykey"]]
-            record["webenv"] = handle.json()["esearchresult"]["webenv"]
-            record["count"] = int(handle.json()["esearchresult"]["count"])
-            record["accn"] = handle.json()["esearchresult"]["idlist"]
-        except KeyError:
-            err = handle.text
-            self.finish(False,
-                        "NCBI returned an error:\n" + err + "\nExiting.")
-            return 0
+        attempt = 0
+        while attempt < 5:
+            try:
+                handle = requests.get(url, params=search_params, timeout=30)
+                record["qkey"] = [handle.json()["esearchresult"]["querykey"]]
+                record["webenv"] = handle.json()["esearchresult"]["webenv"]
+                record["count"] = int(handle.json()["esearchresult"]["count"])
+                record["accn"] = handle.json()["esearchresult"]["idlist"]
+                break
+            except KeyError:
+                err = handle.text
+                self.finish(False,
+                            "NCBI returned an error:\n" + err + "\nExiting.")
+            except(decoder.JSONDecodeError,
+                   requests.exceptions.Timeout,
+                   requests.exceptions.ChunkedEncodingError):
+                print("Got an empty reply or a Timeout from NCBI."
+                      " Let's wait 8'' and try again.")
+                attempt += 1
+                sleep(8)
+        else:
+            self.finish(False, "Too many errors in a row.\n"
+                        "Please wait a few minutes and try "
+                        "again.")
 
         if record["count"] == 0 and self.gui == 0:
             sys.exit("Your serch query returned no results!")
@@ -89,7 +101,7 @@ class Downloader():
         return record
 
 
-    def main_organizer(self, count, b_size, query_keys, webenv):
+    def main_organizer(self, count, b_size, query_key, webenv):
         """
         Defines what tasks need to be performed, handles NCBI server errors and
         writes the sequences into the outfile.
@@ -111,9 +123,9 @@ class Downloader():
 
 
         if missing_accns is not None:
-            webenv, query_keys = self.artificial_history(missing_accns)
-
-        self.actual_downloader(count, b_size, query_keys, webenv)
+            self.artificial_history(missing_accns)
+        else:
+            self.actual_downloader(count, b_size, query_key, webenv)
 
 
     def missing_checker(self):
@@ -154,7 +166,8 @@ class Downloader():
                         ncbi_accn_set = ncbi_accn_set.union(subset)
                         break
                     except (decoder.JSONDecodeError,
-                            requests.exceptions.Timeout):
+                            requests.exceptions.Timeout,
+                            requests.exceptions.ChunkedEncodingError):
                         print("Got an empty reply or a Timeout from NCBI."
                               " Let's wait 8'' and try again.")
                         attempt += 1
@@ -202,7 +215,7 @@ class Downloader():
     def use_efetch(self, start, b_size, webenv, query_key):
         """
         Fetches NCBI data based on the provided search query or acession
-        numbers. Returns the fasta string (or XML in case of erros).
+        numbers. Returns the fasta string.
         """
         if self.terminated is True:
             raise ProgramDone
@@ -216,14 +229,69 @@ class Downloader():
                          "retstart": start,
                          "retmax": b_size,
                          "term": self.term}
-        try:
-            handle = requests.get(url, params=fetch_params, timeout=30)
-            fasta = handle.text
-        except (requests.exceptions.ChunkedEncodingError,
-                requests.exceptions.Timeout):
-            fasta = "Empty string"
+        attempt = 0
+        while attempt < 5:
+            try:
+                handle = requests.get(url, params=fetch_params, timeout=30)
+                fasta = handle.text
+                if not fasta.startswith(">"):
+                    raise ValueError("NCBI server error.")
+                fasta = fasta.replace("\n\n", "\n")
+                break
+            except (requests.exceptions.ChunkedEncodingError,
+                    requests.exceptions.Timeout,
+                    requests.exceptions.ChunkedEncodingError,
+                    ValueError):
+                attempt += 1
+                print("NCBI is not retuning sequence data or we're getting a "
+                      "Timeout. Trying the same chunk again in 8\'\'.")
+                sleep(8)
+        else:
+            self.finish(False, "Too many errors in a row.\n"
+                        "Please wait a few minutes and try "
+                        "again.")
 
         return fasta
+
+
+    def use_epost(self, accession_numbers, webenv):
+        """
+        Uploads data to an 'artificial' history bank on NCBI's servers.
+        Returns a WebEnv and a query_key
+        """
+        if self.terminated is True:
+            raise ProgramDone
+        url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/epost.fcgi"
+        post_params = {"db": self.database,
+                       "api_key": self.api_key}
+        if webenv is not None:
+            post_params["WebEnv"] = webenv
+        attempt = 0
+        while attempt < 5:
+            try:
+                handle = requests.post(url,
+                                       params=post_params,
+                                       data={"id": accession_numbers},
+                                       timeout=30)
+                break
+            except (requests.exceptions.ChunkedEncodingError,
+                    requests.exceptions.Timeout,
+                    requests.exceptions.ChunkedEncodingError):
+                attempt += 1
+                print("NCBI is either retuning an error or we're getting "
+                      "a Timeout. Trying the same chunk again in 8\'\'.")
+                sleep(8)
+        else:
+            self.finish(False, "Too many errors in a row.\n"
+                        "Please wait a few minutes and try "
+                        "again.")
+        if webenv is None:
+            webenv = re.search("<WebEnv>.*</WebEnv>",
+                               handle.text).group()[8:-9]
+        query_key = re.search("<QueryKey>.*</QueryKey>",
+                              handle.text).group()[10:-11]
+
+        return webenv, query_key
 
 
     def artificial_history(self, accns):
@@ -235,12 +303,11 @@ class Downloader():
         """
         if self.terminated is True:
             raise ProgramDone
-        url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/epost.fcgi"
+        outfile = open(self.outfile, 'a')
         max_batch = 200
         if len(accns) < max_batch:
             max_batch = len(accns)
         webenv = None
-        query_keys = []
         accn_list = list(accns)
         print("Creating an aritificial 'history' to work around direct "
               "accession number download.")
@@ -252,36 +319,30 @@ class Downloader():
             else:
                 end = len(accns)
 
+            accns_str = ",".join(accn_list[i:end])
+
+            # Use epost
             print("Uploading accessions %i to %i of %i" % (i + 1,
                                                            end,
                                                            len(accns)))
+            webenv, query_key = self.use_epost(accns_str, webenv)
 
-            accns_str = ",".join(accn_list[i:end])
-            #start = i
-            post_params = {"db": self.database,
-                           "api_key": self.api_key}
-            if webenv is not None:
-                post_params["WebEnv"] = webenv
-            try:
-                handle = requests.post(url,
-                                       params=post_params,
-                                       data={"id": accns_str},
-                                       timeout=30)
-            except requests.exceptions.Timeout:
-                print("Got a timeout. Let's wait 8'' and try again...")
-                sleep(8)
-                handle = requests.post(url,
-                                       params=post_params,
-                                       data={"id": accns_str},
-                                       timeout=30)
-            if webenv is None:
-                webenv = re.search("<WebEnv>.*</WebEnv>",
-                                   handle.text).group()[8:-9]
-            query_key = re.search("<QueryKey>.*</QueryKey>",
-                                  handle.text).group()[10:-11]
-            query_keys.append(query_key)
+            # Use efetch!
+            print("Downloading sequences %i to %i of %i" % (i + 1,
+                                                            end,
+                                                            len(accns)))
+            if self.gui == 1:
+                self.max_seq.emit(len(accns))
+                self.prog_data.emit(end)
 
-        return webenv, query_keys
+            fasta_data = self.use_efetch(0,
+                                         max_batch,
+                                         webenv=webenv,
+                                         query_key=query_key)
+            outfile.write(fasta_data)
+
+        outfile.close()
+        self.missing_checker()
 
 
     def genome_deprecation(self):
@@ -320,11 +381,10 @@ class Downloader():
                 raise ProgramDone
 
 
-    def actual_downloader(self, count, b_size, query_keys, webenv):
+    def actual_downloader(self, count, b_size, query_key, webenv):
         """
         Manages downloads
         """
-        key_step = 0
         outfile = open(self.outfile, 'a')
         if b_size > count:
             b_size = count
@@ -339,44 +399,14 @@ class Downloader():
                 self.max_seq.emit(count)
                 self.prog_data.emit(end)
 
-            if len(query_keys) > 1:
-                query_key = query_keys[key_step]
-                key_step += 1
-                start = 0
-            else:
-                query_key = query_keys[0]
-
-            # Make sure that the program carries on despite server
-            # "hammering" errors.
-            attempt = 0
-            while attempt < 5:
-                try:
-                    data = self.use_efetch(start,
-                                           b_size,
-                                           webenv=webenv,
-                                           query_key=query_key)
-                    if not data.startswith(">"):
-                        raise ValueError("NCBI server error.")
-                    data = data.replace("\n\n", "\n")
-                    break
-                except ValueError:
-                    print("NCBI is not retuning sequence "
-                          "data. Trying the same chunk again in 8\'\'.")
-                    attempt += 1
-                    sleep(8)
-            else:
-                self.finish(False, "Too many errors in a row."
-                            "Please wait a few minutes and try "
-                            "again. (If you use the same output "
-                            "file, your download will resume from "
-                            "where it left off.")
-                outfile.close()
-                return
-
+            data = self.use_efetch(start,
+                                   b_size,
+                                   webenv=webenv,
+                                   query_key=query_key)
             outfile.write(data)
 
         outfile.close()
-        self.main_organizer(count, b_size, query_keys, webenv)
+        self.main_organizer(count, b_size, query_key, webenv)
 
 
     def run_everything(self):
