@@ -78,9 +78,7 @@ class Downloader():
                 err = handle.text
                 self.finish(False,
                             "NCBI returned an error:\n" + err + "\nExiting.")
-            except(decoder.JSONDecodeError,
-                   requests.exceptions.Timeout,
-                   requests.exceptions.ChunkedEncodingError):
+            except:
                 print("Got an empty reply or a Timeout from NCBI."
                       " Let's wait 8'' and try again.")
                 attempt += 1
@@ -124,10 +122,7 @@ class Downloader():
                     raise ValueError("NCBI server error.")
                 fasta = fasta.replace("\n\n", "\n")
                 break
-            except (requests.exceptions.ChunkedEncodingError,
-                    requests.exceptions.Timeout,
-                    requests.exceptions.ChunkedEncodingError,
-                    ValueError):
+            except:
                 attempt += 1
                 print("NCBI is not retuning sequence data or we're getting a "
                       "Timeout. Trying the same chunk again in 8\'\'.")
@@ -160,9 +155,7 @@ class Downloader():
                                        data={"id": accession_numbers},
                                        timeout=30)
                 break
-            except (requests.exceptions.ChunkedEncodingError,
-                    requests.exceptions.Timeout,
-                    requests.exceptions.ChunkedEncodingError):
+            except:
                 attempt += 1
                 print("NCBI is either retuning an error or we're getting "
                       "a Timeout. Trying the same chunk again in 8\'\'.")
