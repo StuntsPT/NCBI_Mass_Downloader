@@ -21,9 +21,14 @@ import sys
 import re
 import tempfile
 import pickle
+from multiprocessing.dummy import Pool
+from itertools import repeat
+from random import randrange
 from os import stat
 from time import sleep
 from json import decoder
+
+from icecream import ic
 
 import requests
 
@@ -46,6 +51,9 @@ class Downloader():
         self.original_count = 0
         self.terminated = False
         self.accn_cache = tempfile.TemporaryFile()
+        self.batch_size = 200
+        self.progress = 0
+        self.pool_size = 8  # Max. 10 threads allowed by NCBI using an API key)
 
 
     def ncbi_search(self, database, term, history="y", retmax=0, retstart=0):
@@ -94,15 +102,21 @@ class Downloader():
             self.no_match.emit("Your serch query returned no results!")
             return None
 
+        sleep(1)
         return record
 
-    def use_efetch(self, start, b_size, webenv, query_key):
+
+    def use_efetch(self, start, webenv, query_key, count=0, epost_batch=0):
         """
         Fetches NCBI data based on the provided search query or acession
         numbers. Returns the fasta string.
         """
         if self.terminated is True:
             raise ProgramDone
+
+        # Ensure workers start async
+        sleep(0.01 * randrange(0, 250, 5))
+
         url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
         fetch_params = {"db": self.database,
                          "retmode": "text",
@@ -111,8 +125,25 @@ class Downloader():
                          "WebEnv": webenv,
                          "query_key": query_key,
                          "retstart": start,
-                         "retmax": b_size,
+                         "retmax": self.batch_size,
                          "term": self.term}
+
+
+        if epost_batch != 0:
+            print_start = epost_batch + 1
+            end = epost_batch + self.batch_size
+        else:
+            print_start = start + 1
+            end = start + self.batch_size
+        if end > count:
+            end = count
+
+        print("Downloading record %i to %i of %i" % (print_start, end, count))
+        if self.gui == 1:
+            if end > self.progress:
+                self.progress = end
+                self.prog_data.emit(end)
+
         attempt = 0
         while attempt < 5:
             try:
@@ -147,6 +178,10 @@ class Downloader():
                        "api_key": self.api_key}
         if webenv is not None:
             post_params["WebEnv"] = webenv
+
+        print("Uploading %i accession numbers to NCBI's history "
+              "server." % (self.batch_size))
+
         attempt = 0
         while attempt < 5:
             try:
@@ -173,7 +208,7 @@ class Downloader():
         return webenv, query_key
 
 
-    def main_organizer(self, count, b_size, query_key, webenv):
+    def main_organizer(self, count, query_key, webenv):
         """
         Defines what tasks need to be performed, handles NCBI server errors and
         writes the sequences into the outfile.
@@ -197,7 +232,7 @@ class Downloader():
         if missing_accns is not None:
             self.artificial_history(missing_accns)
         else:
-            self.actual_downloader(count, b_size, query_key, webenv)
+            self.actual_downloader(count, query_key, webenv)
 
 
     def missing_checker(self):
@@ -249,7 +284,6 @@ class Downloader():
             # accession number downloads.
             pickle.dump(ncbi_accn_set, self.accn_cache, pickle.HIGHEST_PROTOCOL)
 
-
         if ver_ids == ncbi_accn_set:
             self.finish(success=True)
 
@@ -283,46 +317,48 @@ class Downloader():
         """
         if self.terminated is True:
             raise ProgramDone
-        outfile = open(self.outfile, 'a')
-        max_batch = 200
-        if len(accns) < max_batch:
-            max_batch = len(accns)
-        webenv = None
-        accn_list = list(accns)
-        print("Creating an aritificial 'history' to work around direct "
-              "accession number download.")
-        for i in range(0, len(accns), max_batch):
-            if self.terminated is True:
-                return
-            if i + max_batch < len(accns):
-                end = i + max_batch
-            else:
-                end = len(accns)
 
-            accns_str = ",".join(accn_list[i:end])
+        count = len(accns)
 
-            # Use epost
-            print("Uploading accessions %i to %i of %i" % (i + 1,
-                                                           end,
-                                                           len(accns)))
-            webenv, query_key = self.use_epost(accns_str, webenv)
+        # Split the accn list into a list of 200 accns strings
+        accn_strs = self.splitter(list(accns), self.batch_size, "s")
+        batches = [200 * x for x in range(0, len(accn_strs))]
 
-            # Use efetch!
-            print("Downloading sequences %i to %i of %i" % (i + 1,
-                                                            end,
-                                                            len(accns)))
-            if self.gui == 1:
-                self.max_seq.emit(len(accns))
-                self.prog_data.emit(end)
+        accn_containers = self.splitter(accn_strs, 500)
+        batch_containers = self.splitter(batches, 500)
 
-            fasta_data = self.use_efetch(0,
-                                         max_batch,
-                                         webenv=webenv,
-                                         query_key=query_key)
-            outfile.write(fasta_data)
+        if self.gui == 1:
+            self.max_seq.emit(len(accns))
+            self.prog_data.emit(0)
 
-        outfile.close()
+        print("Creating an aritificial 'history'...")
+        # Every 100K sequences, we force the outfile closed, and start a new
+        # worker pool, in order to force periodic filesystem writes.
+        for batch, accns_slice in zip(batch_containers, accn_containers):
+            pool = Pool(self.pool_size)
+            outfile = open(self.outfile, 'a')
+            for fasta in pool.starmap(self.generate_and_get_from_history,
+                                      zip(accns_slice,
+                                          repeat(None),
+                                          repeat(count),
+                                          batch)):
+
+                outfile.write(fasta)
+
+            outfile.close()
+
         self.missing_checker()
+
+
+    def generate_and_get_from_history(self, accns_str, webenv, count, batch):
+        """
+        Generates the artificail history, and immediately gets the results
+        from it.
+        """
+        webenv, query_key = self.use_epost(accns_str, webenv)
+        fasta_data = self.use_efetch(0, webenv, query_key, count, batch)
+
+        return fasta_data
 
 
     def genome_deprecation(self):
@@ -361,32 +397,55 @@ class Downloader():
                 raise ProgramDone
 
 
-    def actual_downloader(self, count, b_size, query_key, webenv):
+    def actual_downloader(self, count, query_key, webenv):
         """
         Manages downloads
         """
-        outfile = open(self.outfile, 'a')
-        if b_size > count:
-            b_size = count
-        for start in range(0, count, b_size):
-            if start + b_size < count:
-                end = start + b_size
-            else:
-                end = count
-            print("Downloading record %i to %i of %i" % (start + 1, end, count))
+        if self.gui == 1:
+            self.max_seq.emit(count)
+            self.prog_data.emit(0)
 
-            if self.gui == 1:
-                self.max_seq.emit(count)
-                self.prog_data.emit(end)
+        if count % self.batch_size != 0:
+            batches = list(range(0, count, self.batch_size))
+        else:
+            batches = list(range(0, count, self.batch_size))[:-1]
 
-            data = self.use_efetch(start,
-                                   b_size,
-                                   webenv=webenv,
-                                   query_key=query_key)
-            outfile.write(data)
+        # Split the batches list into a list of lists, each with 100K sequences
+        # (500 batches each)
+        containers = self.splitter(batches, 500)
 
-        outfile.close()
-        self.main_organizer(count, b_size, query_key, webenv)
+        # Every 100K sequences, we force the outfile closed, and start a new
+        # worker pool, in order to force periodic filesystem writes.
+        for batch in containers:
+            pool = Pool(self.pool_size)
+            outfile = open(self.outfile, 'a')
+            for fasta in pool.starmap(self.use_efetch,
+                                      zip(batch,
+                                          repeat(webenv),
+                                          repeat(query_key),
+                                          repeat(count))):
+
+                outfile.write(fasta)
+
+            outfile.close()
+
+        self.main_organizer(count, query_key, webenv)
+
+
+    def splitter(self, lts, size, res="l"):
+        """
+        Splits a "list to split" (lts) into a list of lists with length 'size'
+        and returns it. If 'res' == 's', return a list of strings instead
+        (with list elements joined by ',')
+        Based on https://stackoverflow.com/a/2215676/3091595
+        """
+        if res == "l":
+            new_list = [lts[i:i + size] for i in range(0, len(lts), size)]
+        elif res == "s":
+            new_list = [",".join(lts[i:i + size])
+                        for i in range(0, len(lts), size)]
+
+        return new_list
 
 
     def run_everything(self):
@@ -398,13 +457,11 @@ class Downloader():
                 self.genome_deprecation()
                 return
 
-            batch_size = 200
-
             record = self.ncbi_search(self.database, self.term)
             count = record["count"]
             self.original_count = count
 
-            self.main_organizer(count, batch_size, record["qkey"], record["webenv"])
+            self.main_organizer(count, record["qkey"], record["webenv"])
         except ProgramDone:
             return
 
