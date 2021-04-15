@@ -284,10 +284,16 @@ class Downloader():
             # accession number downloads.
             pickle.dump(ncbi_accn_set, self.accn_cache, pickle.HIGHEST_PROTOCOL)
 
-        if ver_ids == ncbi_accn_set:
-            self.finish(success=True)
-
         missing_ids = ncbi_accn_set - ver_ids
+
+        ic(missing_ids)
+        if missing_ids != {""}:
+            missing_ids = self.check_unconformant(missing_ids, ncbi_accn_set)
+
+        ic(missing_ids)
+
+        if missing_ids == {""}:
+            self.finish(success=True)
 
         return missing_ids
 
@@ -306,6 +312,21 @@ class Downloader():
 
         target_handle.close()
         return verified_ids
+
+
+    def check_unconformant(self, not_found, local_set):
+        """
+        Makes sure that IDs that were not found in the local FASTA are not
+        simply encoded in a non-standard way:
+        eg "SOMETHING|Accession|SOMETHING"
+        Returns a set of missing IDs with any matched entries removed
+        """
+        sanitized_local_set = {re.search("|.*|", x).group()[1:-1]
+                               for x in local_set}
+
+        real_missing = sanitized_local_set - not_found
+
+        return real_missing
 
 
     def artificial_history(self, accns):
