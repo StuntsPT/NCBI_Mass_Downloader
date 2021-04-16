@@ -286,13 +286,11 @@ class Downloader():
 
         missing_ids = ncbi_accn_set - ver_ids
 
-        ic(missing_ids)
-        if missing_ids != {""}:
-            missing_ids = self.check_unconformant(missing_ids, ncbi_accn_set)
+        if missing_ids != set():
+            not_missing = self.check_unconformant(missing_ids, ver_ids)
+            missing_ids = missing_ids - not_missing
 
-        ic(missing_ids)
-
-        if missing_ids == {""}:
+        if missing_ids == set():
             self.finish(success=True)
 
         return missing_ids
@@ -321,12 +319,12 @@ class Downloader():
         eg "SOMETHING|Accession|SOMETHING"
         Returns a set of missing IDs with any matched entries removed
         """
-        sanitized_local_set = {re.search("|.*|", x).group()[1:-1]
-                               for x in local_set}
+        sanitized_local_set = {re.search("\|.*\|", x).group()[1:-1]
+                               if "|" in x else x for x in local_set}
 
-        real_missing = sanitized_local_set - not_found
+        not_missing = sanitized_local_set.intersection(not_found)
 
-        return real_missing
+        return not_missing
 
 
     def artificial_history(self, accns):
