@@ -41,7 +41,7 @@ class ProgramDone(Exception):
 
 
 class Downloader():
-    def __init__(self, database, term, outfile, gui):
+    def __init__(self, database, term, outfile, verification, gui):
         self.database = database
         self.term = term
         self.outfile = outfile
@@ -54,6 +54,8 @@ class Downloader():
         self.batch_size = 200
         self.progress = 0
         self.pool_size = 8  # Max. 10 threads allowed by NCBI using an API key)
+        self.verification = verification
+        self.verification_attempt = 0
 
 
     def ncbi_search(self, database, term, history="y", retmax=0, retstart=0):
@@ -208,31 +210,34 @@ class Downloader():
         return webenv, query_key
 
 
-    def main_organizer(self, count, query_key, webenv):
+    def main_organizer(self, count, query_key, webenv, missing_accns=None):
         """
         Defines what tasks need to be performed, handles NCBI server errors and
         writes the sequences into the outfile.
         """
-        try:
-            stat(self.outfile).st_size
-            file_exists = True
-        except OSError:
-            missing_accns = None
-            file_exists = False
-        except TypeError:
-            return
-        if file_exists:
-            if stat(self.outfile).st_size != 0:
-                missing_accns = self.missing_checker()
-                count = len(missing_accns)
+        if self.verification is True:
+            try:
+                stat(self.outfile).st_size
+                file_exists = True
+            except OSError:
+                file_exists = False
+            except TypeError:
+                return
+            if file_exists:
+                if stat(self.outfile).st_size != 0 and missing_accns is None:
+                    missing_accns = self.missing_checker()
+                    count = len(missing_accns)
+
+            if missing_accns is not None:
+                missing_accns = self.artificial_history(missing_accns)
             else:
-                missing_accns = None
-
-
-        if missing_accns is not None:
-            self.artificial_history(missing_accns)
+                self.actual_downloader(count, query_key, webenv)
+                missing_accns = self.missing_checker()
+            count = len(missing_accns)
+            self.main_organizer(count, query_key, webenv, missing_accns)
         else:
             self.actual_downloader(count, query_key, webenv)
+            self.finish(success=True)
 
 
     def missing_checker(self):
@@ -242,6 +247,13 @@ class Downloader():
         found, a new missing sequences list is generated and an
         attempt is made to fetch the missing sequences.
         """
+        self.verification_attempt += 1
+        if self.verification_attempt >= 6:
+            self.finish(False, "After 5 failed attempts to verify the download,"
+                        " it is apparent that some accession numbers cannot be "
+                        "matched to the FASTA titles. If you can perform manual"
+                        " validation, consider using the '-nv' switch to skip "
+                        " the automatic verification step.")
         print("Checking for sequences that did not download... Please wait.")
         ver_ids = self.fasta_parser(self.outfile)
         if self.accn_cache.tell() != 0:
@@ -251,6 +263,10 @@ class Downloader():
             ncbi_accn_set = pickle.load(self.accn_cache)
             print("Using cached accession numbers.")
         else:
+            # with open('data.pickle', 'rb') as f:
+            # # The protocol version used is detected automatically, so we do not
+            # # have to specify it.
+            #     ncbi_accn_set = pickle.load(f)
             retmax = 50000
             if self.original_count <= retmax:
                 retmax = self.original_count
@@ -283,12 +299,20 @@ class Downloader():
             # Create an accecsion number cache. This should avoid subsequent
             # accession number downloads.
             pickle.dump(ncbi_accn_set, self.accn_cache, pickle.HIGHEST_PROTOCOL)
+            # with open('data.pickle', 'wb') as f:
+            #     # Pickle the 'data' dictionary using the highest protocol available.
+            #     pickle.dump(ncbi_accn_set, f, pickle.HIGHEST_PROTOCOL)
 
         missing_ids = ncbi_accn_set - ver_ids
 
         if missing_ids != set():
             not_missing = self.check_unconformant(missing_ids, ver_ids)
             missing_ids = missing_ids - not_missing
+
+        # debug_file = open("missing_ids.txt", "w")
+        # for line in missing_ids:
+        #     debug_file.write(line + "\n")
+        # debug_file.close()
 
         if missing_ids == set():
             self.finish(success=True)
@@ -319,10 +343,29 @@ class Downloader():
         eg "SOMETHING|Accession|SOMETHING"
         Returns a set of missing IDs with any matched entries removed
         """
-        sanitized_local_set = {re.search("\|.*\|", x).group()[1:-1]
-                               if "|" in x else x for x in local_set}
+        not_missing = set()
+        for title in local_set:
+            if "|" in title:
+                not_missing.add(re.search("\|.*\|", title).group()[1:-1])
+                not_missing.add(re.search("\|.*$", title).group()[1:].replace("|", ""))
+                # not_missing.add(re.search("\|.*$", title).group()[1:].replace("|", "") + "+")
+                # not_missing.add(re.sub(".$", r"+\g<0>", re.search("\|.*$", title).group()[1:].replace("|", "")))
+                # not_missing.add(re.search("\|.*$", title).group()[1:].replace("|", "_"))
 
-        not_missing = sanitized_local_set.intersection(not_found)
+        not_missing = not_missing.intersection(not_found)
+
+        # between_pipes = {re.search("\|.*\|", x).group()[1:-1]
+        #                  if "|" in x else "" for x in local_set}
+        # cut_by_pipe = {re.search("\|.* ", x).group()[1:-1].replace("|", "")
+        #                if "|" in x else "" for x in local_set}
+        # replaced_pipe = {re.search("\|.* ", x).group()[1:-1].replace("|", "_")
+        #                  if "|" in x else "" for x in local_set}
+        #
+        # not_missing_bp = between_pipes.intersection(not_found)
+        # not_missing_cbp = cut_by_pipe.intersection(not_found)
+        # not_missing_rp = replaced_pipe.intersection(not_found)
+        #
+        # not_missing = not_missing_bp.add(not_missing_cbp).add(not_missing_rp)
 
         return not_missing
 
@@ -366,7 +409,9 @@ class Downloader():
 
             outfile.close()
 
-        self.missing_checker()
+        missing = self.missing_checker()
+
+        return missing
 
 
     def generate_and_get_from_history(self, accns_str, webenv, count, batch):
@@ -437,7 +482,7 @@ class Downloader():
         # worker pool, in order to force periodic filesystem writes.
         for batch in containers:
             pool = Pool(self.pool_size)
-            outfile = open(self.outfile, 'a')
+            outfile = open(self.outfile, 'w')
             for fasta in pool.starmap(self.use_efetch,
                                       zip(batch,
                                           repeat(webenv),
@@ -448,7 +493,7 @@ class Downloader():
 
             outfile.close()
 
-        self.main_organizer(count, query_key, webenv)
+        return
 
 
     def splitter(self, lts, size, res="l"):
@@ -489,7 +534,7 @@ def main():
     Main function. Defines how the arguments get passed to the rest of the
     program.
     """
-    dler = Downloader(sys.argv[2], sys.argv[1], sys.argv[3], 0)
+    dler = Downloader(sys.argv[2], sys.argv[1], sys.argv[3], sys.argv[4], 0)
     dler.run_everything()
 
 

@@ -38,6 +38,18 @@ def arg_list():
                          metavar="filepath",
                          help="Path to where you wish to save your sequences.")
 
+    io_opts.add_argument("-v", "--verification",
+                         dest="verification",
+                         action='store_true',
+                         help="Verify the downloaded sequences against an"
+                              " independently downloaded accessions list.")
+
+    io_opts.add_argument("-nv", "--no-verification",
+                         dest="verification",
+                         action='store_false',
+                         help="Don't Verify the downloaded sequences against an"
+                              " independently downloaded accessions list.")
+
     query_opts.add_argument("-d", "--db",
                             dest="database",
                             required=True,
@@ -61,6 +73,7 @@ def arg_list():
                                  "here: http://www.ncbi.nlm.nih.gov/books/NBK3837/#_EntrezHelp_Entrez_Searching_Options_ ."
                             )
 
+    parser.set_defaults(verification=True)
     arg = parser.parse_args()
     if len(arg.query) < 3:
         quit_text = "usage: NCBI_downloader.py [-h] -o filepath -d database "\
@@ -69,4 +82,4 @@ def arg_list():
                     "must be at least 3 characters long)"
         quit(quit_text)
 
-    return (arg.database, arg.query, arg.outfile)
+    return (arg.database, arg.query, arg.outfile, arg.verification)

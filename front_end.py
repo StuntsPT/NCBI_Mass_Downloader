@@ -202,6 +202,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.Get_data = DownloaderGui(self.database_to_search,
                                           self.search_term,
                                           self.file_to_handle,
+                                          True,
                                           1)
             self.work_thread = QtCore.QThread()
             self.Get_data.max_seq.connect(self.progbar.setMaximum)
@@ -278,9 +279,9 @@ class DownloaderGui(Downloader, QtCore.QObject):
     finished = QtCore.pyqtSignal(str)
 
 
-    def __init__(self, database, term, outfile, gui):
+    def __init__(self, database, term, outfile, verification, gui):
         # Add threading!
-        Downloader.__init__(self, database, term, outfile, gui)
+        Downloader.__init__(self, database, term, outfile, verification, gui)
 
 
 def main():
