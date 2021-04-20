@@ -236,6 +236,8 @@ class Downloader():
             count = len(missing_accns)
             self.main_organizer(count, query_key, webenv, missing_accns)
         else:
+            with open(self.outfile, 'w') as otf:
+                otf.close()
             self.actual_downloader(count, query_key, webenv)
             self.finish(success=True)
 
@@ -482,7 +484,7 @@ class Downloader():
         # worker pool, in order to force periodic filesystem writes.
         for batch in containers:
             pool = Pool(self.pool_size)
-            outfile = open(self.outfile, 'w')
+            outfile = open(self.outfile, 'a')
             for fasta in pool.starmap(self.use_efetch,
                                       zip(batch,
                                           repeat(webenv),
