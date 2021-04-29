@@ -202,8 +202,14 @@ class Downloader():
                         "Please wait a few minutes and try "
                         "again.")
         if webenv is None:
-            webenv = re.search("<WebEnv>.*</WebEnv>",
-                               handle.text).group()[8:-9]
+            try:
+                webenv = re.search("<WebEnv>.*</WebEnv>",
+                                   handle.text).group()[8:-9]
+            except AttributeError:
+                self.finish(False, "None of the following accession numbers "
+                            "seem to have associated sequences:\n"
+                            + accession_numbers +
+                            "Please check your query for any errors.")
         query_key = re.search("<QueryKey>.*</QueryKey>",
                               handle.text).group()[10:-11]
 
@@ -265,10 +271,6 @@ class Downloader():
             ncbi_accn_set = pickle.load(self.accn_cache)
             print("Using cached accession numbers.")
         else:
-            # with open('data.pickle', 'rb') as f:
-            # # The protocol version used is detected automatically, so we do not
-            # # have to specify it.
-            #     ncbi_accn_set = pickle.load(f)
             retmax = 50000
             if self.original_count <= retmax:
                 retmax = self.original_count
@@ -301,20 +303,12 @@ class Downloader():
             # Create an accecsion number cache. This should avoid subsequent
             # accession number downloads.
             pickle.dump(ncbi_accn_set, self.accn_cache, pickle.HIGHEST_PROTOCOL)
-            # with open('data.pickle', 'wb') as f:
-            #     # Pickle the 'data' dictionary using the highest protocol available.
-            #     pickle.dump(ncbi_accn_set, f, pickle.HIGHEST_PROTOCOL)
 
         missing_ids = ncbi_accn_set - ver_ids
 
         if missing_ids != set():
             not_missing = self.check_unconformant(missing_ids, ver_ids)
             missing_ids = missing_ids - not_missing
-
-        # debug_file = open("missing_ids.txt", "w")
-        # for line in missing_ids:
-        #     debug_file.write(line + "\n")
-        # debug_file.close()
 
         if missing_ids == set():
             self.finish(success=True)
@@ -350,24 +344,10 @@ class Downloader():
             if "|" in title:
                 not_missing.add(re.search("\|.*\|", title).group()[1:-1])
                 not_missing.add(re.search("\|.*$", title).group()[1:].replace("|", ""))
-                # not_missing.add(re.search("\|.*$", title).group()[1:].replace("|", "") + "+")
-                # not_missing.add(re.sub(".$", r"+\g<0>", re.search("\|.*$", title).group()[1:].replace("|", "")))
-                # not_missing.add(re.search("\|.*$", title).group()[1:].replace("|", "_"))
+                not_missing.add(re.search("\|.*$", title).group()[1:].replace("|", "_"))
+                not_missing.add(re.search("\|.*$", title).group()[1:].replace("|", "") + "+")
 
         not_missing = not_missing.intersection(not_found)
-
-        # between_pipes = {re.search("\|.*\|", x).group()[1:-1]
-        #                  if "|" in x else "" for x in local_set}
-        # cut_by_pipe = {re.search("\|.* ", x).group()[1:-1].replace("|", "")
-        #                if "|" in x else "" for x in local_set}
-        # replaced_pipe = {re.search("\|.* ", x).group()[1:-1].replace("|", "_")
-        #                  if "|" in x else "" for x in local_set}
-        #
-        # not_missing_bp = between_pipes.intersection(not_found)
-        # not_missing_cbp = cut_by_pipe.intersection(not_found)
-        # not_missing_rp = replaced_pipe.intersection(not_found)
-        #
-        # not_missing = not_missing_bp.add(not_missing_cbp).add(not_missing_rp)
 
         return not_missing
 
