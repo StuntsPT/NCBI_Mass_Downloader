@@ -73,6 +73,16 @@ def arg_list():
                                  "here: http://www.ncbi.nlm.nih.gov/books/NBK3837/#_EntrezHelp_Entrez_Searching_Options_ ."
                             )
 
+    query_opts.add_argument("-f", "--format",
+                            dest="rettype",
+                            required=False,
+                            type=str,
+                            default="fasta",
+                            choices=["fasta", "gb"],
+                            metavar="rettype",
+                            help='Format to download the data. Defaults to '
+                                 '"fasta", but can also be "gb".')
+
     parser.set_defaults(verification=True)
     arg = parser.parse_args()
     if len(arg.query) < 3:
@@ -82,4 +92,4 @@ def arg_list():
                     "must be at least 3 characters long)"
         quit(quit_text)
 
-    return (arg.database, arg.query, arg.outfile, arg.verification)
+    return (arg.database, arg.query, arg.outfile, arg.verification, arg.rettype)

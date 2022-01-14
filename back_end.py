@@ -41,7 +41,7 @@ class ProgramDone(Exception):
 
 
 class Downloader():
-    def __init__(self, database, term, outfile, verification, gui):
+    def __init__(self, database, term, outfile, verification, gui, rettype):
         self.database = database
         self.term = term
         self.outfile = outfile
@@ -56,6 +56,7 @@ class Downloader():
         self.pool_size = 8  # Max. 10 threads allowed by NCBI using an API key)
         self.verification = verification
         self.verification_attempt = 0
+        self.rettype = rettype
 
 
     def ncbi_search(self, database, term, history="y", retmax=0, retstart=0):
@@ -108,10 +109,10 @@ class Downloader():
         return record
 
 
-    def use_efetch(self, start, webenv, query_key, count=0, epost_batch=0):
+    def use_efetch(self, start, webenv, query_key, count=0, epost_batch=0, rettype="fasta"):
         """
         Fetches NCBI data based on the provided search query or acession
-        numbers. Returns the fasta string.
+        numbers. Returns the resulting string.
         """
         if self.terminated is True:
             raise ProgramDone
@@ -122,7 +123,7 @@ class Downloader():
         url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
         fetch_params = {"db": self.database,
                          "retmode": "text",
-                         "rettype": "fasta",
+                         "rettype": rettype,
                          "api_key": self.api_key,
                          "WebEnv": webenv,
                          "query_key": query_key,
@@ -146,14 +147,16 @@ class Downloader():
                 self.progress = end
                 self.prog_data.emit(end)
 
+
         attempt = 0
         while attempt < 5:
             try:
                 handle = requests.get(url, params=fetch_params, timeout=30)
-                fasta = handle.text
-                if not fasta.startswith(">"):
-                    raise ValueError("NCBI server error.")
-                fasta = fasta.replace("\n\n", "\n")
+                result = handle.text
+                if rettype == "fasta":
+                    if not result.startswith(">"):
+                        raise ValueError("NCBI server error.")
+                    result = result.replace("\n\n", "\n")
                 break
             except:
                 attempt += 1
@@ -165,7 +168,7 @@ class Downloader():
                         "Please wait a few minutes and try "
                         "again.")
 
-        return fasta
+        return result
 
 
     def use_epost(self, accession_numbers, webenv):
@@ -221,7 +224,7 @@ class Downloader():
         Defines what tasks need to be performed, handles NCBI server errors and
         writes the sequences into the outfile.
         """
-        if self.verification is True:
+        if self.verification is True and self.rettype == "fasta":
             try:
                 stat(self.outfile).st_size
                 file_exists = True
@@ -244,7 +247,7 @@ class Downloader():
         else:
             with open(self.outfile, 'w') as otf:
                 otf.close()
-            self.actual_downloader(count, query_key, webenv)
+            self.actual_downloader(count, query_key, webenv, self.rettype)
             self.finish(success=True)
 
 
@@ -443,7 +446,7 @@ class Downloader():
                 raise ProgramDone
 
 
-    def actual_downloader(self, count, query_key, webenv):
+    def actual_downloader(self, count, query_key, webenv, rettype="fasta"):
         """
         Manages downloads
         """
@@ -469,7 +472,9 @@ class Downloader():
                                       zip(batch,
                                           repeat(webenv),
                                           repeat(query_key),
-                                          repeat(count))):
+                                          repeat(count),
+                                          repeat(0),
+                                          repeat(rettype))):
 
                 outfile.write(fasta)
 
@@ -516,7 +521,7 @@ def main():
     Main function. Defines how the arguments get passed to the rest of the
     program.
     """
-    dler = Downloader(sys.argv[2], sys.argv[1], sys.argv[3], sys.argv[4], 0)
+    dler = Downloader(sys.argv[2], sys.argv[1], sys.argv[3], sys.argv[4], 0, sys.argv[5])
     dler.run_everything()
 
 
