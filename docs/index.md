@@ -1,7 +1,7 @@
 # NCBI Mass Sequence Downloader
 
 ## Description
-This program will download sequences *en masse* from several NCBI databases (at the user's chioce).
+This program will download sequences *en masse* from several NCBI databases (at the user's choice).
 After the downloading is finished, the program will check the resulting file for any missing sequences and continuously retry the download until all sequences are present in the local file.
 It will run on both python2 and python3.
 
