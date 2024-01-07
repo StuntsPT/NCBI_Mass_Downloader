@@ -1,1 +1,13 @@
-docs/mkdocs.yml
+site_name: 'NCBI Mass Sequence Downloader manual'
+site_favicon: 'assets/Icon.png'
+nav:
+    - 'Introduction': 'index.md'
+    - 'Installation': 'install.md'
+    - 'Binary builds': 'binaries.md'
+    - 'Usage': 'usage.md'
+    - 'Testing': 'testing.md'
+    - 'Future Plans': 'future.md'
+    - 'Limitations': 'limits.md'
+    - 'FAQ': 'faq.md'
+
+theme: readthedocs
