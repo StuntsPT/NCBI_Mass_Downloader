@@ -294,7 +294,7 @@ class Downloader():
             # See https://www.biostars.org/p/305310/#305317
             master_records = set()
             for accn in ncbi_accn_set:
-                if bool(re.search('[A-Z]{4}0+(\.\d){0,}$', accn)):
+                if bool(re.search(r'[A-Z]{4}0+(\.\d){0,}$', accn)):
                     master_records.add(accn)
                     print("WARNING: Master record found and "
                           "removed: %s." % (accn))
