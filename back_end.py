@@ -325,7 +325,7 @@ class Downloader():
 
         for lines in target_handle:
             if lines.startswith(">"):
-                seqid = re.match("([^\s]+)", lines).group(0)[1:]
+                seqid = re.match(r"([^\s]+)", lines).group(0)[1:]
                 verified_ids.add(seqid)
 
         target_handle.close()
@@ -342,10 +342,10 @@ class Downloader():
         not_missing = set()
         for title in local_set:
             if "|" in title:
-                not_missing.add(re.search("\|.*\|", title).group()[1:-1])
-                not_missing.add(re.search("\|.*$", title).group()[1:].replace("|", ""))
-                not_missing.add(re.search("\|.*$", title).group()[1:].replace("|", "_"))
-                not_missing.add(re.search("\|.*$", title).group()[1:].replace("|", "") + "+")
+                not_missing.add(re.search(r"\|.*\|", title).group()[1:-1])
+                not_missing.add(re.search(r"\|.*$", title).group()[1:].replace("|", ""))
+                not_missing.add(re.search(r"\|.*$", title).group()[1:].replace("|", "_"))
+                not_missing.add(re.search(r"\|.*$", title).group()[1:].replace("|", "") + "+")
 
         not_missing = not_missing.intersection(not_found)
 
